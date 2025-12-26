@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# Environment variables
+.env
+
+# SQLite database
+instance/*.db
+
+# Flask
+instance/
+
+# OS
+.DS_Store

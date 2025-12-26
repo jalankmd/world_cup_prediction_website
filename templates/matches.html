@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Matches</h2>
+
+<div class="matches-container">
+    {% for match in matches %}
+        {% set status = "open" %}
+        {% if match.is_finished() %}
+            {% set status = "finished" %}
+        {% elif match.is_locked() %}
+            {% set status = "locked" %}
+        {% endif %}
+
+        <div class="match-card {{ status }}">
+            <div class="teams">
+                {{ match.home_team }} <span class="vs">vs</span> {{ match.away_team }}
+            </div>
+
+            {% if match.match_date %}
+                <div class="kickoff">Kickoff: {{ match.match_date.strftime("%Y-%m-%d %H:%M") }}</div>
+            {% else %}
+                <div class="kickoff">Kickoff: TBD</div>
+            {% endif %}
+
+            {% set pred = predictions.get(match.id) %}
+
+            {% if status == "open" %}
+                <form method="POST" action="{{ url_for('predict_inline', match_id=match.id) }}" class="prediction-inputs">
+                    <input type="number" name="predicted_home_score" min="0" max="20" value="{{ pred.predicted_home_score if pred else '' }}">
+                    <span class="vs">-</span>
+                    <input type="number" name="predicted_away_score" min="0" max="20" value="{{ pred.predicted_away_score if pred else '' }}">
+                    <button type="submit">
+                        {% if pred %} Update {% else %} Save {% endif %}
+                    </button>
+                </form>
+
+            {% elif status == "locked" %}
+                <div class="prediction-inputs">
+                    <input type="number" value="{{ pred.predicted_home_score }}" readonly>
+                    <span class="vs">-</span>
+                    <input type="number" value="{{ pred.predicted_away_score }}" readonly>
+                </div>
+                <div class="locked-text">Match Locked</div>
+
+            {% elif status == "finished" %}
+                <div class="kickoff">Final Score: {{ match.home_score }} - {{ match.away_score }}</div>
+                {% if pred %}
+                    <div class="prediction-inputs">
+                        <input type="number" value="{{ pred.predicted_home_score }}" readonly>
+                        <span class="vs">-</span>
+                        <input type="number" value="{{ pred.predicted_away_score }}" readonly>
+                    </div>
+                    <div class="kickoff">Points: {{ pred.points }}</div>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

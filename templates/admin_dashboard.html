@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Admin Dashboard</h2>
+<p>Update match scores below:</p>
+
+<form method="POST">
+    <table>
+        <thead>
+            <tr>
+                <th>Match</th>
+                <th>Date</th>
+                <th>Home Score</th>
+                <th>Away Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for match in matches %}
+            <tr>
+                <td>{{ match.home_team }} vs {{ match.away_team }}</td>
+                <td>{{ match.match_date.strftime("%Y-%m-%d %H:%M") if match.match_date else "TBD" }}</td>
+                <td><input type="number" name="home_score-{{ match.id }}" value="{{ match.home_score if match.home_score is not none else '' }}" min="0"></td>
+                <td><input type="number" name="away_score-{{ match.id }}" value="{{ match.away_score if match.away_score is not none else '' }}" min="0"></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit">Save Results</button>
+</form>
+{% endblock %}

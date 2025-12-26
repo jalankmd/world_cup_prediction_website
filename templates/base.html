@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Meta tags for responsiveness and character encoding -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Page title -->
+    <title>World Cup Prediction</title>
+
+    <!-- Link to external CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- ===========================
+         Header / Navigation Bar
+         =========================== -->
+    <header>
+        <nav>
+            <ul>
+                <!-- Brand / Logo -->
+                <li class="brand">⚽ World Cup Predictor</li>
+
+                <!-- Navigation links for all users -->
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+
+                <!-- Links for authenticated users -->
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('matches') }}">Matches</a></li>
+                    <li><a href="{{ url_for('leaderboard') }}">Leaderboard</a></li>
+                        {% if current_user.is_admin %}
+                        <li><a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                {% else %}
+                    <!-- Links for non-authenticated users -->
+                    <li><a href="{{ url_for('login') }}">Login</a></li>
+                    <li><a href="{{ url_for('register') }}">Register</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <!-- ===========================
+         Main Content Area
+         =========================== -->
+    <main>
+        <!-- Flash messages section -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page-specific content will be injected here -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ===========================
+         Footer
+         =========================== -->
+    <footer>
+        <p>&copy; 2025 World Cup Predictions</p>
+    </footer>
+</body>
+</html>

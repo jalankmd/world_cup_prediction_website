@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="home-container">
+    <h1>Welcome to World Cup Predictor!</h1>
+    <p class="subtitle">Predict match results and compete on the leaderboard.</p>
+
+    {% if not current_user.is_authenticated %}
+        <!-- Buttons for new users -->
+        <a href="{{ url_for('login') }}" class="btn-secondary">Login</a>
+        <a href="{{ url_for('register') }}" class="btn-primary">Register</a>
+    {% else %}
+        <!-- Button for logged-in users -->
+        <a href="{{ url_for('matches') }}" class="btn-primary">View Matches</a>
+    {% endif %}
+</div>
+{% endblock %}
