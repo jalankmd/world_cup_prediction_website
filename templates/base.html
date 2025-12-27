@@ -22,20 +22,20 @@
                 <li class="brand">⚽ World Cup Predictor</li>
 
                 <!-- Navigation links for all users -->
-                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('main.home') }}">Home</a></li>
 
                 <!-- Links for authenticated users -->
                 {% if current_user.is_authenticated %}
-                    <li><a href="{{ url_for('matches') }}">Matches</a></li>
-                    <li><a href="{{ url_for('leaderboard') }}">Leaderboard</a></li>
+                    <li><a href="{{ url_for('main.matches') }}">Matches</a></li>
+                    <li><a href="{{ url_for('main.leaderboard') }}">Leaderboard</a></li>
                         {% if current_user.is_admin %}
-                        <li><a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a></li>
+                        <li><a href="{{ url_for('main.admin_dashboard') }}">Admin Dashboard</a></li>
                     {% endif %}
-                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                    <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
                 {% else %}
                     <!-- Links for non-authenticated users -->
-                    <li><a href="{{ url_for('login') }}">Login</a></li>
-                    <li><a href="{{ url_for('register') }}">Register</a></li>
+                    <li><a href="{{ url_for('main.login') }}">Login</a></li>
+                    <li><a href="{{ url_for('main.register') }}">Register</a></li>
                 {% endif %}
             </ul>
         </nav>

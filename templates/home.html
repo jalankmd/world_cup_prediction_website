@@ -7,11 +7,11 @@
 
     {% if not current_user.is_authenticated %}
         <!-- Buttons for new users -->
-        <a href="{{ url_for('login') }}" class="btn-secondary">Login</a>
-        <a href="{{ url_for('register') }}" class="btn-primary">Register</a>
+        <a href="{{ url_for('main.login') }}" class="btn-secondary">Login</a>
+        <a href="{{ url_for('main.register') }}" class="btn-primary">Register</a>
     {% else %}
         <!-- Button for logged-in users -->
-        <a href="{{ url_for('matches') }}" class="btn-primary">View Matches</a>
+        <a href="{{ url_for('main.matches') }}" class="btn-primary">View Matches</a>
     {% endif %}
 </div>
 {% endblock %}

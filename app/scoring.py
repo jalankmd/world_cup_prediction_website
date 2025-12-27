@@ -7,7 +7,8 @@ Points system:
 - 0 points otherwise
 """
 
-from models import Match, Prediction, db
+from .models import Match, Prediction
+from . import db
 
 def calculate_points(prediction):
     """
