@@ -32,7 +32,7 @@ def create_app(config_class=None):
     # Ensure instance folder exists
     os.makedirs(app.instance_path, exist_ok=True)
 
-    # Initialize extensionsQ
+    # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
