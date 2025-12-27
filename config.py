@@ -18,4 +18,5 @@ class ProductionConfig(Config):
     """Production-specific config"""
     DEBUG = False
     # You can set DATABASE_URL in production env (Postgres recommended)
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+    database_url = os.environ.get("DATABASE_URL")
+    SQLALCHEMY_DATABASE_URI = database_url.replace("postgresql://", "postgresql+psycopg://") if database_url else None
