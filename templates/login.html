@@ -20,14 +20,4 @@
         <p>{{ form.submit() }}</p>
     </form>
 
-    {% if unverified_email %}
-    <div class="verify-resend-box">
-        <p>Haven't verified your email yet? Resend the link:</p>
-        <form method="POST" action="{{ url_for('main.resend_verification') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="email" value="{{ unverified_email }}">
-            <button type="submit" class="btn-resend">Resend verification email</button>
-        </form>
-    </div>
-    {% endif %}
 {% endblock %}

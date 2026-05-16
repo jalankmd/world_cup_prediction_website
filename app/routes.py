@@ -9,14 +9,8 @@ This file defines all the Flask routes using a blueprint (`bp`).
 - Admin dashboard
 """
 
-import logging
-
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
-
-logger = logging.getLogger(__name__)
 from flask_login import login_required, login_user, logout_user, current_user
-import requests
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from app.models import (
     Competition,
     User,
@@ -150,57 +144,6 @@ def _allowed_competitions_for_user(user):
 
     return group, bool(group.include_tournament1), bool(group.include_tournament2)
 
-# ---------------------------
-# Email verification helpers
-# ---------------------------
-def _make_verification_token(email):
-    s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
-    return s.dumps(email, salt="email-verification")
-
-
-def _decode_verification_token(token, max_age=3600):
-    s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
-    try:
-        return s.loads(token, salt="email-verification", max_age=max_age)
-    except (SignatureExpired, BadSignature):
-        return None
-
-
-def _send_verification_email(user):
-    token = _make_verification_token(user.email)
-    verify_url = url_for("main.verify_email", token=token, _external=True)
-    resp = requests.post(
-        "https://api.brevo.com/v3/smtp/email",
-        headers={
-            "api-key": current_app.config["BREVO_API_KEY"],
-            "Content-Type": "application/json",
-        },
-        json={
-            "sender": {
-                "name": current_app.config["MAIL_SENDER_NAME"],
-                "email": current_app.config["MAIL_SENDER_EMAIL"],
-            },
-            "to": [{"email": user.email}],
-            "subject": "Verify your World Cup Predictor account",
-            "textContent": (
-                f"Hi {user.first_name},\n\n"
-                f"Thanks for registering! Please verify your email address by clicking the link below:\n\n"
-                f"{verify_url}\n\n"
-                f"This link expires in 1 hour. If you didn't create an account, you can ignore this email.\n\n"
-                f"World Cup Predictor"
-            ),
-            "htmlContent": (
-                f"<p>Hi {user.first_name},</p>"
-                f"<p>Thanks for registering! Please verify your email address:</p>"
-                f"<p><a href=\"{verify_url}\" style=\"background:#28a745;color:#fff;padding:10px 20px;"
-                f"border-radius:6px;text-decoration:none;font-weight:bold;\">Verify Email</a></p>"
-                f"<p>This link expires in 1 hour.</p>"
-                f"<p>If you didn't create an account, you can ignore this email.</p>"
-            ),
-        },
-        timeout=10,
-    )
-    resp.raise_for_status()
 
 
 # ---------------------------
@@ -236,18 +179,14 @@ def register():
             username=form.username.data,
             email=form.email.data,
             competition_id=group.id,
-            email_verified=False,
+            email_verified=True,
         )
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
 
-        try:
-            _send_verification_email(user)
-        except Exception:
-            logger.exception("Failed to send verification email to %s", user.email)
-
-        return redirect(url_for("main.verify_sent", email=user.email))
+        flash("Account created! You can now log in.", "success")
+        return redirect(url_for("main.login"))
 
     return render_template("register.html", form=form)
 
@@ -266,9 +205,6 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.check_password(form.password.data):
-            if not user.email_verified and not user.is_admin:
-                flash("Please verify your email before logging in. Check your inbox for the verification link.", "error")
-                return render_template("login.html", form=form, unverified_email=user.email)
             login_user(user)
             flash("Logged in successfully!", "success")
             return redirect(url_for("main.home"))
@@ -288,50 +224,6 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for("main.login"))
 
-
-# ---------------------------
-# Email Verification
-# ---------------------------
-@bp.route("/verify-sent")
-def verify_sent():
-    email = request.args.get("email", "")
-    return render_template("verify_sent.html", email=email)
-
-
-@bp.route("/verify-email/<token>")
-def verify_email(token):
-    email = _decode_verification_token(token)
-    if not email:
-        flash("The verification link is invalid or has expired. Please register again or contact the admin.", "danger")
-        return redirect(url_for("main.login"))
-
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        flash("No account found for this verification link.", "danger")
-        return redirect(url_for("main.login"))
-
-    if user.email_verified:
-        flash("Your email is already verified. Go ahead and log in.", "info")
-        return redirect(url_for("main.login"))
-
-    user.email_verified = True
-    db.session.commit()
-    login_user(user)
-    flash(f"Welcome, {user.first_name}! Your email is verified and you're now logged in.", "success")
-    return redirect(url_for("main.home"))
-
-
-@bp.route("/resend-verification", methods=["POST"])
-def resend_verification():
-    email = request.form.get("email", "").strip()
-    user = User.query.filter_by(email=email).first()
-    if user and not user.email_verified:
-        try:
-            _send_verification_email(user)
-        except Exception:
-            logger.exception("Failed to resend verification email to %s", email)
-    flash("If that email is registered and unverified, a new verification link has been sent.", "info")
-    return redirect(url_for("main.login"))
 
 
 # ---------------------------
