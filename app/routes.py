@@ -15,7 +15,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 
 logger = logging.getLogger(__name__)
 from flask_login import login_required, login_user, logout_user, current_user
-from flask_mail import Message
+import resend
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from app.models import (
     Competition,
@@ -30,7 +30,7 @@ from app.models import (
 )
 from app.forms import RegisterForm, LoginForm, PredictionForm
 from app.scoring import update_all_points
-from app import db, mail
+from app import db
 from datetime import datetime, timezone
 
 # ---------------------------
@@ -167,28 +167,29 @@ def _decode_verification_token(token, max_age=3600):
 
 
 def _send_verification_email(user):
+    resend.api_key = current_app.config["RESEND_API_KEY"]
     token = _make_verification_token(user.email)
     verify_url = url_for("main.verify_email", token=token, _external=True)
-    msg = Message(
-        subject="Verify your World Cup Predictor account",
-        recipients=[user.email],
-    )
-    msg.body = (
-        f"Hi {user.first_name},\n\n"
-        f"Thanks for registering! Please verify your email address by clicking the link below:\n\n"
-        f"{verify_url}\n\n"
-        f"This link expires in 1 hour. If you didn't create an account, you can ignore this email.\n\n"
-        f"World Cup Predictor"
-    )
-    msg.html = (
-        f"<p>Hi {user.first_name},</p>"
-        f"<p>Thanks for registering! Please verify your email address:</p>"
-        f"<p><a href=\"{verify_url}\" style=\"background:#28a745;color:#fff;padding:10px 20px;"
-        f"border-radius:6px;text-decoration:none;font-weight:bold;\">Verify Email</a></p>"
-        f"<p>This link expires in 1 hour.</p>"
-        f"<p>If you didn't create an account, you can ignore this email.</p>"
-    )
-    mail.send(msg)
+    resend.Emails.send({
+        "from": current_app.config["MAIL_SENDER"],
+        "to": [user.email],
+        "subject": "Verify your World Cup Predictor account",
+        "text": (
+            f"Hi {user.first_name},\n\n"
+            f"Thanks for registering! Please verify your email address by clicking the link below:\n\n"
+            f"{verify_url}\n\n"
+            f"This link expires in 1 hour. If you didn't create an account, you can ignore this email.\n\n"
+            f"World Cup Predictor"
+        ),
+        "html": (
+            f"<p>Hi {user.first_name},</p>"
+            f"<p>Thanks for registering! Please verify your email address:</p>"
+            f"<p><a href=\"{verify_url}\" style=\"background:#28a745;color:#fff;padding:10px 20px;"
+            f"border-radius:6px;text-decoration:none;font-weight:bold;\">Verify Email</a></p>"
+            f"<p>This link expires in 1 hour.</p>"
+            f"<p>If you didn't create an account, you can ignore this email.</p>"
+        ),
+    })
 
 
 # ---------------------------
@@ -290,12 +291,12 @@ def verify_sent():
 def verify_email(token):
     email = _decode_verification_token(token)
     if not email:
-        flash("The verification link is invalid or has expired. Please register again or contact the admin.", "error")
+        flash("The verification link is invalid or has expired. Please register again or contact the admin.", "danger")
         return redirect(url_for("main.login"))
 
     user = User.query.filter_by(email=email).first()
     if not user:
-        flash("No account found for this verification link.", "error")
+        flash("No account found for this verification link.", "danger")
         return redirect(url_for("main.login"))
 
     if user.email_verified:
@@ -317,7 +318,7 @@ def resend_verification():
         try:
             _send_verification_email(user)
         except Exception:
-            pass
+            logger.exception("Failed to resend verification email to %s", email)
     flash("If that email is registered and unverified, a new verification link has been sent.", "info")
     return redirect(url_for("main.login"))
 

@@ -5,7 +5,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
-from flask_mail import Mail
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -16,7 +15,6 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 csrf = CSRFProtect()
-mail = Mail()
 
 login_manager.login_view = "main.login"
 
@@ -43,7 +41,6 @@ def create_app(config_class=None):
     login_manager.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
-    mail.init_app(app)
 
     from app.models import User
 

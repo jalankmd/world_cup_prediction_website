@@ -8,14 +8,9 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Flask-Mail (Gmail SMTP)
-    MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
-    MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
-    MAIL_USE_TLS = True
-    MAIL_USE_SSL = False
-    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
-    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER")
+    # Resend (transactional email)
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+    MAIL_SENDER = os.environ.get("MAIL_SENDER", "World Cup Predictor <onboarding@resend.dev>")
 
 class DevelopmentConfig(Config):
     """Development-specific config"""
