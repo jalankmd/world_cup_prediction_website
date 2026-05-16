@@ -1,7 +1,7 @@
 # forms.py
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, IntegerField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, NumberRange
+from wtforms.validators import DataRequired, EqualTo, Length, ValidationError, NumberRange
 from .models import User, Competition
 
 # -----------------------
@@ -12,7 +12,6 @@ class RegisterForm(FlaskForm):
     first_name = StringField("First Name", validators=[DataRequired(), Length(max=50)])
     last_name = StringField("Last Name", validators=[DataRequired(), Length(max=50)])
     username = StringField("Username", validators=[DataRequired(), Length(max=50)])
-    email = StringField("Email", validators=[DataRequired(), Email(), Length(max=120)])
     group_code = StringField("Group Code", validators=[DataRequired(), Length(max=40)])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField(
@@ -24,12 +23,6 @@ class RegisterForm(FlaskForm):
     # -----------------------
     # Custom Validators
     # -----------------------
-    def validate_email(self, email):
-        """Ensure the email is unique in the database."""
-        user = User.query.filter_by(email=email.data).first()
-        if user:
-            raise ValidationError("Email already in use.")
-
     def validate_username(self, username):
         """Ensure the username is unique in the database."""
         user = User.query.filter_by(username=username.data).first()

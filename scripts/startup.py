@@ -18,6 +18,14 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
+    # Make email nullable since it's no longer collected at registration
+    try:
+        db.session.execute(db.text("ALTER TABLE users ALTER COLUMN email DROP NOT NULL"))
+        db.session.execute(db.text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     if Match.query.count() == 0:
         from scripts.seed_matches import seed_matches, seed_knockout_matches
         seed_matches()
