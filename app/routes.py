@@ -230,7 +230,7 @@ def register():
             _send_verification_email(user)
             flash("Account created! Check your email to verify your account before logging in.", "success")
         except Exception:
-            flash("Account created, but we couldn't send the verification email. Contact the admin.", "error")
+            flash("Account created, but we couldn't send the verification email. Contact the admin.", "danger")
 
         return redirect(url_for("main.verify_sent"))
 
