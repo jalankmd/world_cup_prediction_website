@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Results Entry</h2>
+
+<div class="competition-tabs">
+    <a href="{{ url_for('main.admin_results', admin_tab='classic') }}"
+       class="competition-tab {% if admin_tab == 'classic' %}active{% endif %}">
+        Classic Results
+    </a>
+    <a href="{{ url_for('main.admin_results', admin_tab='odds') }}"
+       class="competition-tab {% if admin_tab == 'odds' %}active{% endif %}">
+        Odds Entry
+    </a>
+</div>
+
+<form method="POST" action="{{ url_for('main.admin_results', admin_tab=admin_tab) }}" class="admin-results-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="admin_tab" value="{{ admin_tab }}">
+
+    {% if admin_tab == 'classic' %}
+
+    <section class="admin-results-section">
+        <h3>Match Results &amp; Details</h3>
+        <p class="meta-line">Edit team names, dates, scores, and stage info. Leave score blank if not yet played.</p>
+        <div class="matches-table-wrap">
+            <table class="matches-table admin-results-table">
+                <thead>
+                    <tr>
+                        <th>Date / Time</th>
+                        <th>Home Team</th>
+                        <th>Away Team</th>
+                        <th>Stage</th>
+                        <th>Group</th>
+                        <th>Stadium</th>
+                        <th>Home Score</th>
+                        <th>Away Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in matches %}
+                    <tr class="{% if match.is_finished() %}match-row finished{% elif match.is_locked() %}match-row locked{% else %}match-row open{% endif %}">
+                        <td>
+                            <input type="datetime-local"
+                                   name="match_date-{{ match.id }}"
+                                   value="{{ match.match_date.strftime('%Y-%m-%dT%H:%M') if match.match_date else '' }}">
+                        </td>
+                        <td>
+                            <select name="home_team-{{ match.id }}">
+                                {% for team in all_teams %}
+                                    <option value="{{ team }}" {% if match.home_team == team %}selected{% endif %}>{{ team }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <select name="away_team-{{ match.id }}">
+                                {% for team in all_teams %}
+                                    <option value="{{ team }}" {% if match.away_team == team %}selected{% endif %}>{{ team }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="stage-{{ match.id }}"
+                                   value="{{ match.stage or '' }}"
+                                   placeholder="group">
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="group_name-{{ match.id }}"
+                                   value="{{ match.group_name or '' }}"
+                                   placeholder="A">
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="stadium-{{ match.id }}"
+                                   value="{{ match.stadium or '' }}"
+                                   placeholder="TBD">
+                        </td>
+                        <td>
+                            <input type="number"
+                                   name="home_score-{{ match.id }}"
+                                   min="0" max="30"
+                                   value="{{ match.home_score if match.home_score is not none else '' }}"
+                                   placeholder="–">
+                        </td>
+                        <td>
+                            <input type="number"
+                                   name="away_score-{{ match.id }}"
+                                   min="0" max="30"
+                                   value="{{ match.away_score if match.away_score is not none else '' }}"
+                                   placeholder="–">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="admin-results-section">
+        <h3>Group Qualifying Results</h3>
+        <p class="meta-line">Select the two teams that qualified from each group. Saves and recalculates qualifier points.</p>
+        <div class="group-grid">
+            {% for group_name, teams in group_teams.items() %}
+                {% set gr = group_results.get(group_name) %}
+                <div class="group-card admin-group-card">
+                    <h4>Group {{ group_name }}</h4>
+                    <label class="admin-group-label">1st</label>
+                    <select name="group_result_q1-{{ group_name }}">
+                        <option value="">— not set —</option>
+                        {% for team in teams %}
+                            <option value="{{ team }}"
+                                {% if gr and gr.qualified_team_1 == team %}selected{% endif %}>
+                                {{ team }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <label class="admin-group-label">2nd</label>
+                    <select name="group_result_q2-{{ group_name }}">
+                        <option value="">— not set —</option>
+                        {% for team in teams %}
+                            <option value="{{ team }}"
+                                {% if gr and gr.qualified_team_2 == team %}selected{% endif %}>
+                                {{ team }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="admin-results-section">
+        <h3>Tournament Outcome (Podium)</h3>
+        <p class="meta-line">Set the final tournament results to award podium prediction points (Champion 10 pts, Runner-up 6 pts, Third 3 pts).</p>
+        <div class="outcome-grid">
+            <div class="outcome-item">
+                <label>Champion</label>
+                <select name="outcome_champion">
+                    <option value="">— not set —</option>
+                    {% for team in all_teams %}
+                        <option value="{{ team }}"
+                            {% if outcome and outcome.champion_team == team %}selected{% endif %}>
+                            {{ team }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="outcome-item">
+                <label>Runner-up</label>
+                <select name="outcome_runner_up">
+                    <option value="">— not set —</option>
+                    {% for team in all_teams %}
+                        <option value="{{ team }}"
+                            {% if outcome and outcome.runner_up_team == team %}selected{% endif %}>
+                            {{ team }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="outcome-item">
+                <label>Third Place</label>
+                <select name="outcome_third">
+                    <option value="">— not set —</option>
+                    {% for team in all_teams %}
+                        <option value="{{ team }}"
+                            {% if outcome and outcome.third_place_team == team %}selected{% endif %}>
+                            {{ team }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </section>
+
+    {% else %}
+
+    <section class="admin-results-section">
+        <h3>Match Odds &amp; Scores</h3>
+        <p class="meta-line">Enter betting odds and final scores for Tournament 2. Leave blank if not yet available.</p>
+        <div class="matches-table-wrap">
+            <table class="matches-table admin-results-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Match</th>
+                        <th>Home Score</th>
+                        <th>Away Score</th>
+                        <th>Home Odds</th>
+                        <th>Draw Odds</th>
+                        <th>Away Odds</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in matches %}
+                    <tr class="{% if match.is_finished() %}match-row finished{% elif match.is_locked() %}match-row locked{% else %}match-row open{% endif %}">
+                        <td class="col-kickoff">{{ match.match_date.strftime('%d %b %Y') if match.match_date else 'TBD' }}</td>
+                        <td class="odds-match-label">{{ match.home_team }} vs {{ match.away_team }}</td>
+                        <td>
+                            <input type="number"
+                                   name="home_score-{{ match.id }}"
+                                   min="0" max="30"
+                                   value="{{ match.home_score if match.home_score is not none else '' }}"
+                                   placeholder="–">
+                        </td>
+                        <td>
+                            <input type="number"
+                                   name="away_score-{{ match.id }}"
+                                   min="0" max="30"
+                                   value="{{ match.away_score if match.away_score is not none else '' }}"
+                                   placeholder="–">
+                        </td>
+                        <td>
+                            <input type="number" step="0.01"
+                                   name="home_odds-{{ match.id }}"
+                                   min="1"
+                                   value="{{ '%.2f'|format(match.home_odds) if match.home_odds is not none else '' }}"
+                                   placeholder="e.g. 2.10">
+                        </td>
+                        <td>
+                            <input type="number" step="0.01"
+                                   name="draw_odds-{{ match.id }}"
+                                   min="1"
+                                   value="{{ '%.2f'|format(match.draw_odds) if match.draw_odds is not none else '' }}"
+                                   placeholder="e.g. 3.30">
+                        </td>
+                        <td>
+                            <input type="number" step="0.01"
+                                   name="away_odds-{{ match.id }}"
+                                   min="1"
+                                   value="{{ '%.2f'|format(match.away_odds) if match.away_odds is not none else '' }}"
+                                   placeholder="e.g. 3.50">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% endif %}
+
+    <div class="save-btn-row">
+        <button type="submit" class="btn-save-results">Save All Changes</button>
+    </div>
+</form>
+{% endblock %}

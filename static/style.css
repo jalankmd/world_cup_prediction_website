@@ -63,12 +63,8 @@ table tbody tr:hover {
 }
 
 @media (max-width: 600px) {
-    table, thead, tbody, th, td, tr {
-        display: block;
-    }
-    th, td {
-        padding: 10px;
-        text-align: left;
+    .matches-table-wrap {
+        overflow-x: auto;
     }
 }
 
@@ -95,6 +91,18 @@ main {
     font-size: 18px;
     color: black;   /* Visible subtitle text */
     margin-bottom: 30px;
+}
+
+.home-hero-image-wrap {
+    margin: 0 auto 24px;
+    max-width: 460px;
+}
+
+.home-hero-image {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
 /* ===========================
@@ -221,6 +229,279 @@ button:hover {
 }
 
 /* ===========================
+   Matches Row Layout
+   =========================== */
+.matches-table-wrap {
+    overflow-x: auto;
+    border: 1px solid #d7dde5;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.date-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0 14px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.competition-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 8px 0 12px;
+    flex-wrap: wrap;
+}
+
+.competition-tab {
+    text-decoration: none;
+    color: #13314f;
+    border: 1px solid #bed0e2;
+    background: #edf4fb;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 700;
+}
+
+.competition-tab.active {
+    color: #ffffff;
+    background: #1f6cbf;
+    border-color: #1f6cbf;
+}
+
+.date-tab {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid #ccd6e2;
+    text-decoration: none;
+    color: #1e2a36;
+    background: #f4f8fc;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.date-tab.active {
+    background: #0b5ed7;
+    color: #ffffff;
+    border-color: #0b5ed7;
+}
+
+.matches-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+.matches-table th,
+.matches-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e8edf3;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.col-kickoff {
+    min-width: 155px;
+    white-space: nowrap;
+}
+
+.col-prediction {
+    min-width: 380px;
+    white-space: normal;
+}
+
+.team-with-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.country-flag {
+    width: 20px;
+    height: 15px;
+    object-fit: cover;
+    border-radius: 2px;
+    border: 1px solid #d9e0ea;
+}
+
+.match-row.open {
+    background: #f5f9ff;
+}
+
+.match-row.locked {
+    background: #fff8e8;
+}
+
+.match-row.finished {
+    background: #eefaf0;
+}
+
+.prediction-inline-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.prediction-inline-form span {
+    font-weight: 700;
+}
+
+.prediction-inline-form input {
+    width: 56px;
+    padding: 5px;
+    text-align: center;
+    border: 1px solid #b8c3d1;
+    border-radius: 4px;
+}
+
+.prediction-inline-form button {
+    width: auto;
+    padding: 7px 14px;
+    border-radius: 4px;
+    background: #0b5ed7;
+    color: #ffffff;
+    border: 1px solid #084298;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.prediction-inline-form button:hover {
+    background: #0a58ca;
+}
+
+.odds-inline-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.odds-inline-form select,
+.group-card select,
+.podium-form select {
+    min-width: 180px;
+    padding: 6px;
+    border: 1px solid #b8c3d1;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.odds-inline-form button,
+.group-card button,
+.podium-form button {
+    width: auto;
+    padding: 7px 14px;
+    border-radius: 4px;
+    background: #0b5ed7;
+    color: #ffffff;
+    border: 1px solid #084298;
+    font-weight: 700;
+}
+
+.bonus-section {
+    margin-top: 22px;
+    border: 1px solid #d7dde5;
+    border-radius: 10px;
+    padding: 14px;
+    background: #fbfdff;
+}
+
+.bonus-section h3 {
+    margin-top: 0;
+}
+
+.group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.group-card {
+    border: 1px solid #d5dce6;
+    border-radius: 8px;
+    padding: 10px;
+    background: #ffffff;
+}
+
+.group-card.locked {
+    background: #fff9e8;
+}
+
+.group-card form,
+.podium-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.meta-line {
+    margin: 8px 0 0;
+    color: #435566;
+    font-size: 13px;
+}
+
+.leaderboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.leaderboard-panel table {
+    width: 100%;
+}
+
+.admin-competition-form {
+    display: grid;
+    gap: 8px;
+    max-width: 420px;
+    margin-bottom: 16px;
+}
+
+.admin-competition-form input[type="text"] {
+    padding: 8px;
+    border: 1px solid #c8d3df;
+    border-radius: 6px;
+}
+
+.group-delete-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.group-delete-form input[type="password"] {
+    max-width: 150px;
+    padding: 6px;
+    border: 1px solid #c8d3df;
+    border-radius: 6px;
+}
+
+.group-delete-form button {
+    width: auto;
+    padding: 6px 10px;
+}
+
+@media (max-width: 900px) {
+    .col-prediction {
+        min-width: 320px;
+    }
+
+    .prediction-inline-form button {
+        flex-basis: 100%;
+        width: 100%;
+    }
+
+    .leaderboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===========================
    Responsive Adjustments
    =========================== */
 @media (max-width: 768px) {
@@ -289,4 +570,252 @@ button:hover {
     .prediction-inputs button {
         width: 100%;
     }
+}
+
+/* ===========================
+   Admin Results Page
+   =========================== */
+.admin-results-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.admin-results-section {
+    border: 1px solid #d7dde5;
+    border-radius: 10px;
+    padding: 16px;
+    background: #fbfdff;
+}
+
+.admin-results-section h3 {
+    margin-top: 0;
+    margin-bottom: 4px;
+    color: #1a2a3a;
+}
+
+.admin-results-table {
+    min-width: 900px;
+}
+
+.admin-results-table input[type="text"],
+.admin-results-table input[type="number"],
+.admin-results-table input[type="datetime-local"] {
+    width: 100%;
+    min-width: 90px;
+    padding: 5px 6px;
+    border: 1px solid #b8c3d1;
+    border-radius: 4px;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.admin-results-table input[type="number"] {
+    min-width: 60px;
+    max-width: 70px;
+}
+
+.admin-results-table input[type="datetime-local"] {
+    min-width: 170px;
+}
+
+.admin-results-table select {
+    width: 100%;
+    min-width: 130px;
+    padding: 5px 6px;
+    border: 1px solid #b8c3d1;
+    border-radius: 4px;
+    font-size: 13px;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.admin-group-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.admin-group-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #435566;
+    margin: 0;
+}
+
+.admin-group-card select {
+    padding: 6px;
+    border: 1px solid #b8c3d1;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 13px;
+}
+
+.outcome-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.outcome-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.outcome-item label {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1a2a3a;
+}
+
+.outcome-item select {
+    padding: 8px;
+    border: 1px solid #b8c3d1;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 14px;
+}
+
+.odds-match-label {
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.save-btn-row {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 0 16px;
+}
+
+.btn-save-results {
+    width: auto;
+    padding: 12px 32px;
+    background: #28a745;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-save-results:hover {
+    background: #218838;
+}
+
+@media (max-width: 768px) {
+    .outcome-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===========================
+   Email Verification Pages
+   =========================== */
+.verify-sent-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.verify-sent-card {
+    background: #fff;
+    border: 1px solid #d7dde5;
+    border-radius: 12px;
+    padding: 36px 32px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+}
+
+.verify-sent-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.verify-sent-card h2 {
+    margin-top: 0;
+}
+
+.verify-divider {
+    border: none;
+    border-top: 1px solid #e5eaf0;
+    margin: 20px 0;
+}
+
+.verify-email-input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #b8c3d1;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+}
+
+.btn-resend {
+    width: 100%;
+    padding: 10px;
+    background: #0b5ed7;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btn-resend:hover {
+    background: #0a58ca;
+}
+
+.verify-resend-box {
+    margin-top: 20px;
+    border: 1px solid #d7dde5;
+    border-radius: 8px;
+    padding: 14px;
+    background: #f8fbff;
+    max-width: 400px;
+}
+
+/* ===========================
+   Group Qualifier / Podium UX
+   =========================== */
+.group-card-locked-badge {
+    display: inline-block;
+    background: #e67e22;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+    letter-spacing: 0.4px;
+}
+
+.podium-deadline-notice {
+    display: inline-block;
+    background: #edf4fb;
+    border: 1px solid #bed0e2;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #1a3a5c;
+    margin-bottom: 10px;
+}
+
+.podium-locked-notice {
+    display: inline-block;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #856404;
+    margin-bottom: 10px;
 }

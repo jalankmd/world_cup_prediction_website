@@ -2,29 +2,54 @@
 
 {% block content %}
 <h2>Admin Dashboard</h2>
-<p>Update match scores below:</p>
 
-<form method="POST">
-    <table>
-        <thead>
-            <tr>
-                <th>Match</th>
-                <th>Date</th>
-                <th>Home Score</th>
-                <th>Away Score</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for match in matches %}
-            <tr>
-                <td>{{ match.home_team }} vs {{ match.away_team }}</td>
-                <td>{{ match.match_date.strftime("%Y-%m-%d %H:%M") if match.match_date else "TBD" }}</td>
-                <td><input type="number" name="home_score-{{ match.id }}" value="{{ match.home_score if match.home_score is not none else '' }}" min="0"></td>
-                <td><input type="number" name="away_score-{{ match.id }}" value="{{ match.away_score if match.away_score is not none else '' }}" min="0"></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <button type="submit">Save Results</button>
+<h3>Create Group</h3>
+<form method="POST" class="admin-competition-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="form_action" value="create_group">
+    <label>Group Name</label>
+    <input type="text" name="group_name" placeholder="Friends Group" required>
+
+    <label>Group Code</label>
+    <input type="text" name="group_code" placeholder="FRIENDS2026" required>
+
+    <label><input type="checkbox" name="include_tournament1" checked> Include Competition 1</label>
+    <label><input type="checkbox" name="include_tournament2" checked> Include Competition 2</label>
+
+    <button type="submit">Create Group</button>
 </form>
+
+<h3>Groups</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Code</th>
+            <th>Competition 1</th>
+            <th>Competition 2</th>
+            <th>Users</th>
+            <th>Delete Group</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for group in groups %}
+        <tr>
+            <td>{{ group.name }}</td>
+            <td>{{ group.code }}</td>
+            <td>{{ "Yes" if group.include_tournament1 else "No" }}</td>
+            <td>{{ "Yes" if group.include_tournament2 else "No" }}</td>
+            <td>{{ group.users|length }}</td>
+            <td>
+                <form method="POST" class="group-delete-form" onsubmit="return confirm('Delete this group and all users in it?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="form_action" value="delete_group">
+                    <input type="hidden" name="group_id" value="{{ group.id }}">
+                    <input type="password" name="admin_password" placeholder="Admin password" required>
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

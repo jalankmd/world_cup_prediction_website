@@ -26,10 +26,14 @@
 
                 <!-- Links for authenticated users -->
                 {% if current_user.is_authenticated %}
-                    <li><a href="{{ url_for('main.matches') }}">Matches</a></li>
+                    {% if current_user.is_admin %}
+                        <li><a href="{{ url_for('main.admin_results', admin_tab='classic') }}">Results Entry</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('main.matches') }}">Matches</a></li>
+                    {% endif %}
                     <li><a href="{{ url_for('main.leaderboard') }}">Leaderboard</a></li>
                         {% if current_user.is_admin %}
-                        <li><a href="{{ url_for('main.admin_dashboard') }}">Admin Dashboard</a></li>
+                        <li><a href="{{ url_for('main.admin_dashboard') }}">Group Admin</a></li>
                     {% endif %}
                     <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
                 {% else %}

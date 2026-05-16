@@ -1,14 +1,46 @@
 # scoring.py
 """
 Module for calculating and updating points for match predictions.
-Points system:
-- 3 points for exact score (home and away correct)
-- 2 points for correct outcome (win/draw/loss)
-- 0 points otherwise
+Tournament 1 (classic):
+- Base points: 3 for exact score, 2 for correct outcome
+- Bonus by stage: +1 for knockout, +2 for semifinal/final, +1 for third-place
+- Group qualifier picks: 1 point per correct team
+- Podium picks: champion=10, runner-up=6, third-place=3
+
+Tournament 2 (odds):
+- Pick winner/draw only
+- Correct pick awards the corresponding odds value for that result
 """
 
-from .models import Match, Prediction
+from .models import (
+    Prediction,
+    OddsPrediction,
+    GroupQualifierPrediction,
+    GroupResult,
+    PodiumPrediction,
+    TournamentOutcome,
+)
 from . import db
+
+def _stage_bonus(stage):
+    """Return bonus points for the configured match stage."""
+    stage = (stage or "group").lower()
+    if stage in {"final", "semi_final", "semifinal", "semi-final"}:
+        return 2
+    if stage in {"third_place", "third-place", "third_place_playoff"}:
+        return 1
+    if stage in {"round_of_32", "round_of_16", "last_16", "quarter_final", "quarterfinal", "knockout"}:
+        return 1
+    return 0
+
+
+def _match_outcome(home_score, away_score):
+    if home_score > away_score:
+        return "home"
+    if home_score < away_score:
+        return "away"
+    return "draw"
+
 
 def calculate_points(prediction):
     """
@@ -18,7 +50,7 @@ def calculate_points(prediction):
         prediction (Prediction): A Prediction object containing user's predicted scores.
 
     Returns:
-        int: Points earned for the prediction (3, 2, or 0)
+        int: Points earned for the prediction with stage bonus.
     """
     match = prediction.match
 
@@ -26,10 +58,12 @@ def calculate_points(prediction):
     if match.home_score is None or match.away_score is None:
         return 0  # Cannot score points if match result is unknown
 
+    bonus = _stage_bonus(match.stage)
+
     # 1. Exact score prediction
     if (prediction.predicted_home_score == match.home_score and
         prediction.predicted_away_score == match.away_score):
-        return 3
+        return 3 + bonus
 
     # 2. Correct outcome prediction (winner/draw)
     predicted_diff = prediction.predicted_home_score - prediction.predicted_away_score
@@ -40,10 +74,59 @@ def calculate_points(prediction):
     if (predicted_diff > 0 and actual_diff > 0) or \
        (predicted_diff < 0 and actual_diff < 0) or \
        (predicted_diff == 0 and actual_diff == 0):
-        return 2
+        return 2 + bonus
 
     # 3. Wrong prediction
     return 0
+
+
+def calculate_odds_points(prediction):
+    """Calculate Tournament 2 points based on matching outcome and odds."""
+    match = prediction.match
+    if match.home_score is None or match.away_score is None:
+        return 0.0
+
+    actual = _match_outcome(match.home_score, match.away_score)
+    predicted = (prediction.predicted_outcome or "").lower()
+    if predicted != actual:
+        return 0.0
+
+    if actual == "home":
+        return float(match.home_odds or 0.0)
+    if actual == "draw":
+        return float(match.draw_odds or 0.0)
+    return float(match.away_odds or 0.0)
+
+
+def update_group_qualifier_points():
+    """Score each group pick with 1 point per correctly selected qualified team."""
+    group_results = {r.group_name: r for r in GroupResult.query.all()}
+    predictions = GroupQualifierPrediction.query.all()
+
+    for pred in predictions:
+        result = group_results.get(pred.group_name)
+        if not result or not result.qualified_team_1 or not result.qualified_team_2:
+            pred.points = 0
+            continue
+        actual_set = {result.qualified_team_1, result.qualified_team_2}
+        pred_set = {pred.team_1, pred.team_2}
+        pred.points = len(actual_set.intersection(pred_set))
+
+
+def update_podium_points():
+    """Score podium predictions using 10/6/3 for exact positional picks."""
+    outcome = TournamentOutcome.query.first()
+    predictions = PodiumPrediction.query.all()
+
+    for pred in predictions:
+        points = 0
+        if outcome and outcome.champion_team and pred.champion_team == outcome.champion_team:
+            points += 10
+        if outcome and outcome.runner_up_team and pred.runner_up_team == outcome.runner_up_team:
+            points += 6
+        if outcome and outcome.third_place_team and pred.third_place_team == outcome.third_place_team:
+            points += 3
+        pred.points = points
 
 
 def update_all_points():
@@ -55,6 +138,17 @@ def update_all_points():
     """
     predictions = Prediction.query.all()
     for p in predictions:
-        p.points = calculate_points(p)  # Update points for each prediction
+        p.points = calculate_points(p)
+
+    odds_predictions = OddsPrediction.query.all()
+    for p in odds_predictions:
+        p.points = calculate_odds_points(p)
+
+    update_group_qualifier_points()
+    update_podium_points()
+
     db.session.commit()
-    print(f"Updated points for {len(predictions)} predictions.")
+    print(
+        f"Updated points for {len(predictions)} classic predictions and "
+        f"{len(odds_predictions)} odds predictions."
+    )

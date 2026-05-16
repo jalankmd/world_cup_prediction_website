@@ -32,6 +32,13 @@
             {% endfor %}
         </p>
         <p>
+            {{ form.group_code.label }}<br>
+            {{ form.group_code(size=32) }}<br>
+            {% for error in form.group_code.errors %}
+                <span class="error">{{ error }}</span>
+            {% endfor %}
+        </p>
+        <p>
             {{ form.password.label }}<br>
             {{ form.password(size=32) }}<br>
             {% for error in form.password.errors %}

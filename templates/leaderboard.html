@@ -3,22 +3,68 @@
 {% block content %}
 <h2>Leaderboard</h2>
 
-<table>
-    <thead>
-        <tr>
-            <th>Rank</th>
-            <th>Username</th>
-            <th>Points</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for user in users %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.total_points }}</td>
-            </tr>
+{% if current_user.is_admin and group_tabs %}
+    <div class="date-tabs" role="tablist" aria-label="Filter leaderboard by group">
+        {% for tab in group_tabs %}
+            <a
+                href="{{ url_for('main.leaderboard', group=tab.value) }}"
+                class="date-tab {% if selected_group == tab.value %}active{% endif %}"
+            >
+                {{ tab.label }}
+            </a>
         {% endfor %}
-    </tbody>
-</table>
+    </div>
+{% endif %}
+
+<p class="meta-line">Scope: {{ group_label }}</p>
+
+<div class="leaderboard-grid">
+    {% if show_tournament1 %}
+        <section class="leaderboard-panel">
+            <h3>Competition 1: Score Predictor</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Username</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in classic_users %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.tournament1_points }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    {% endif %}
+
+    {% if show_tournament2 %}
+        <section class="leaderboard-panel">
+            <h3>Competition 2: Odds Predictor</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Username</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in odds_users %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.tournament2_points }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    {% endif %}
+</div>
 {% endblock %}

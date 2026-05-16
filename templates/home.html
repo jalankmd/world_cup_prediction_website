@@ -5,6 +5,10 @@
     <h1>Welcome to World Cup Predictor!</h1>
     <p class="subtitle">Predict match results and compete on the leaderboard.</p>
 
+    <div class="home-hero-image-wrap">
+        <img src="{{ url_for('static', filename='home-hero-2026.png') }}" alt="World Cup 2026" class="home-hero-image">
+    </div>
+
     {% if not current_user.is_authenticated %}
         <!-- Buttons for new users -->
         <a href="{{ url_for('main.login') }}" class="btn-secondary">Login</a>

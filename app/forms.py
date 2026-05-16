@@ -2,7 +2,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, NumberRange
-from .models import User
+from .models import User, Competition
 
 # -----------------------
 # Registration Form
@@ -13,6 +13,7 @@ class RegisterForm(FlaskForm):
     last_name = StringField("Last Name", validators=[DataRequired(), Length(max=50)])
     username = StringField("Username", validators=[DataRequired(), Length(max=50)])
     email = StringField("Email", validators=[DataRequired(), Email(), Length(max=120)])
+    group_code = StringField("Group Code", validators=[DataRequired(), Length(max=40)])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField(
         "Confirm Password",
@@ -34,6 +35,13 @@ class RegisterForm(FlaskForm):
         user = User.query.filter_by(username=username.data).first()
         if user:
             raise ValidationError("Username already taken.")
+
+    def validate_group_code(self, group_code):
+        """Ensure group signup code exists."""
+        code = group_code.data.strip()
+        group = Competition.query.filter_by(code=code).first()
+        if not group:
+            raise ValidationError("Invalid group code.")
 
 # -----------------------
 # Login Form

@@ -2,59 +2,287 @@
 
 {% block content %}
 <h2>Matches</h2>
+{% if user_group %}
+    <p class="meta-line">Group: {{ user_group.name }}</p>
+{% endif %}
 
-<div class="matches-container">
-    {% for match in matches %}
-        {% set status = "open" %}
-        {% if match.is_finished() %}
-            {% set status = "finished" %}
-        {% elif match.is_locked() %}
-            {% set status = "locked" %}
-        {% endif %}
+<div class="competition-tabs" role="tablist" aria-label="Select competition">
+    {% if allow_tournament1 %}
+        <a
+            href="{{ url_for('main.matches', competition='classic', date=selected_date) }}"
+            class="competition-tab {% if competition == 'classic' %}active{% endif %}"
+        >
+            Competition 1: Score Predictor
+        </a>
+    {% endif %}
+    {% if allow_tournament2 %}
+        <a
+            href="{{ url_for('main.matches', competition='odds', date=selected_date) }}"
+            class="competition-tab {% if competition == 'odds' %}active{% endif %}"
+        >
+            Competition 2: Odds Predictor
+        </a>
+    {% endif %}
+</div>
 
-        <div class="match-card {{ status }}">
-            <div class="teams">
-                {{ match.home_team }} <span class="vs">vs</span> {{ match.away_team }}
-            </div>
-
-            {% if match.match_date %}
-                <div class="kickoff">Kickoff: {{ match.match_date.strftime("%Y-%m-%d %H:%M") }}</div>
-            {% else %}
-                <div class="kickoff">Kickoff: TBD</div>
-            {% endif %}
-
-            {% set pred = predictions.get(match.id) %}
-
-            {% if status == "open" %}
-                <form method="POST" action="{{ url_for('main.predict_inline', match_id=match.id) }}" class="prediction-inputs">
-                    <input type="number" name="predicted_home_score" min="0" max="20" value="{{ pred.predicted_home_score if pred else '' }}">
-                    <span class="vs">-</span>
-                    <input type="number" name="predicted_away_score" min="0" max="20" value="{{ pred.predicted_away_score if pred else '' }}">
-                    <button type="submit">
-                        {% if pred %} Update {% else %} Save {% endif %}
-                    </button>
-                </form>
-
-            {% elif status == "locked" %}
-                <div class="prediction-inputs">
-                    <input type="number" value="{{ pred.predicted_home_score }}" readonly>
-                    <span class="vs">-</span>
-                    <input type="number" value="{{ pred.predicted_away_score }}" readonly>
-                </div>
-                <div class="locked-text">Match Locked</div>
-
-            {% elif status == "finished" %}
-                <div class="kickoff">Final Score: {{ match.home_score }} - {{ match.away_score }}</div>
-                {% if pred %}
-                    <div class="prediction-inputs">
-                        <input type="number" value="{{ pred.predicted_home_score }}" readonly>
-                        <span class="vs">-</span>
-                        <input type="number" value="{{ pred.predicted_away_score }}" readonly>
-                    </div>
-                    <div class="kickoff">Points: {{ pred.points }}</div>
-                {% endif %}
-            {% endif %}
-        </div>
+<div class="date-tabs" role="tablist" aria-label="Filter matches by date">
+    {% for tab in date_tabs %}
+        <a
+            href="{{ url_for('main.matches', date=tab.value, competition=competition) }}"
+            class="date-tab {% if selected_date == tab.value %}active{% endif %}"
+        >
+            {{ tab.label }}
+        </a>
     {% endfor %}
 </div>
+
+{% if competition == 'classic' %}
+    <div class="matches-table-wrap">
+        <table class="matches-table">
+            <thead>
+                <tr>
+                    <th class="col-kickoff">Kickoff</th>
+                    <th>Home Team</th>
+                    <th>Away Team</th>
+                    <th>Status</th>
+                    <th class="col-prediction">Your Prediction</th>
+                    <th>Final Score</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in matches %}
+                    {% set status = "open" %}
+                    {% if match.is_finished() %}
+                        {% set status = "finished" %}
+                    {% elif match.is_locked() %}
+                        {% set status = "locked" %}
+                    {% endif %}
+                    {% set pred = predictions.get(match.id) %}
+
+                    <tr class="match-row {{ status }}">
+                        <td class="col-kickoff">{{ match.match_date.strftime("%Y-%m-%d %H:%M") if match.match_date else "TBD" }}</td>
+                        <td>
+                            <span class="team-with-flag">
+                                {% if team_flag_codes.get(match.home_team) %}
+                                    <img class="country-flag" src="https://flagcdn.com/20x15/{{ team_flag_codes.get(match.home_team) }}.png" alt="{{ match.home_team }} flag" loading="lazy">
+                                {% endif %}
+                                {{ match.home_team }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="team-with-flag">
+                                {% if team_flag_codes.get(match.away_team) %}
+                                    <img class="country-flag" src="https://flagcdn.com/20x15/{{ team_flag_codes.get(match.away_team) }}.png" alt="{{ match.away_team }} flag" loading="lazy">
+                                {% endif %}
+                                {{ match.away_team }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if status == "open" %}
+                                Open
+                            {% elif status == "locked" %}
+                                Locked
+                            {% else %}
+                                Finished
+                            {% endif %}
+                        </td>
+                        <td class="col-prediction">
+                            {% if status == "open" %}
+                                <form method="POST" action="{{ url_for('main.predict_inline', match_id=match.id) }}" class="prediction-inline-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="selected_date" value="{{ selected_date }}">
+                                    <input type="hidden" name="competition" value="classic">
+                                    <input type="number" name="predicted_home_score" min="0" max="20" value="{{ pred.predicted_home_score if pred else '' }}" required>
+                                    <span>-</span>
+                                    <input type="number" name="predicted_away_score" min="0" max="20" value="{{ pred.predicted_away_score if pred else '' }}" required>
+                                    <button type="submit">{% if pred %}Update{% else %}Save{% endif %}</button>
+                                </form>
+                            {% elif pred %}
+                                {{ pred.predicted_home_score }} - {{ pred.predicted_away_score }}
+                            {% else %}
+                                No prediction
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if match.is_finished() %}
+                                {{ match.home_score }} - {{ match.away_score }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ pred.points if pred else 0 }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <section class="bonus-section">
+        <h3>Group Qualifier Picks</h3>
+        <p>Pick 2 teams from each group before that group starts. You get 1 point per correct team.</p>
+        <div class="group-grid">
+            {% for card in group_cards %}
+                <div class="group-card {% if card.locked %}locked{% endif %}">
+                    <h4>Group {{ card.group_name }}</h4>
+                    {% if card.locked %}
+                        <span class="group-card-locked-badge">Locked</span>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('main.predict_group_qualifiers') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="group_name" value="{{ card.group_name }}">
+                        <input type="hidden" name="selected_date" value="{{ selected_date }}">
+                        <input type="hidden" name="competition" value="classic">
+                        <select name="team_1" {% if card.locked %}disabled{% endif %} required>
+                            <option value="">Pick team 1</option>
+                            {% for team in card.teams %}
+                                <option value="{{ team }}" {% if card.prediction and card.prediction.team_1 == team %}selected{% endif %}>{{ team }}</option>
+                            {% endfor %}
+                        </select>
+                        <select name="team_2" {% if card.locked %}disabled{% endif %} required>
+                            <option value="">Pick team 2</option>
+                            {% for team in card.teams %}
+                                <option value="{{ team }}" {% if card.prediction and card.prediction.team_2 == team %}selected{% endif %}>{{ team }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if not card.locked %}
+                            <button type="submit">Save Group {{ card.group_name }}</button>
+                        {% endif %}
+                    </form>
+                    {% if card.prediction %}
+                        <p class="meta-line">Your pick: {{ card.prediction.team_1 }}, {{ card.prediction.team_2 }} &mdash; {{ card.prediction.points }} pts</p>
+                    {% endif %}
+                    {% if card.result and card.result.qualified_team_1 and card.result.qualified_team_2 %}
+                        <p class="meta-line">Qualified: {{ card.result.qualified_team_1 }}, {{ card.result.qualified_team_2 }}</p>
+                    {% endif %}
+                    {% if card.deadline and not card.locked %}
+                        <p class="meta-line">Locks: {{ card.deadline.strftime('%d %b %Y %H:%M') }} UTC</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="bonus-section">
+        <h3>Podium Picks</h3>
+        <p>Predict the top 3 teams. Locks when the first match kicks off. Points: Champion 10 &bull; Runner-up 6 &bull; Third place 3.</p>
+
+        {% if podium_locked %}
+            <span class="podium-locked-notice">Picks are locked — the tournament has begun.</span>
+        {% elif podium_deadline %}
+            <span class="podium-deadline-notice">Open until {{ podium_deadline.strftime('%d %b %Y %H:%M') }} UTC</span>
+        {% endif %}
+
+        <form class="podium-form" method="POST" action="{{ url_for('main.predict_podium') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="selected_date" value="{{ selected_date }}">
+            <input type="hidden" name="competition" value="classic">
+
+            <label>Champion</label>
+            <select name="champion_team" {% if podium_locked %}disabled{% endif %} required>
+                <option value="">Select champion</option>
+                {% for team in all_teams %}
+                    <option value="{{ team }}" {% if podium_prediction and podium_prediction.champion_team == team %}selected{% endif %}>{{ team }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Runner-up</label>
+            <select name="runner_up_team" {% if podium_locked %}disabled{% endif %} required>
+                <option value="">Select runner-up</option>
+                {% for team in all_teams %}
+                    <option value="{{ team }}" {% if podium_prediction and podium_prediction.runner_up_team == team %}selected{% endif %}>{{ team }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Third Place</label>
+            <select name="third_place_team" {% if podium_locked %}disabled{% endif %} required>
+                <option value="">Select third place</option>
+                {% for team in all_teams %}
+                    <option value="{{ team }}" {% if podium_prediction and podium_prediction.third_place_team == team %}selected{% endif %}>{{ team }}</option>
+                {% endfor %}
+            </select>
+
+            {% if not podium_locked %}
+                <button type="submit">Save Podium Picks</button>
+            {% endif %}
+        </form>
+        {% if podium_prediction %}
+            <p class="meta-line">Your podium points: {{ podium_prediction.points }}</p>
+        {% endif %}
+    </section>
+{% else %}
+    <div class="matches-table-wrap">
+        <table class="matches-table">
+            <thead>
+                <tr>
+                    <th class="col-kickoff">Kickoff</th>
+                    <th>Home Team</th>
+                    <th>Away Team</th>
+                    <th>Status</th>
+                    <th class="col-prediction">Your Pick (Win/Draw)</th>
+                    <th>Odds (H / D / A)</th>
+                    <th>Final Score</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in matches %}
+                    {% set status = "open" %}
+                    {% if match.is_finished() %}
+                        {% set status = "finished" %}
+                    {% elif match.is_locked() %}
+                        {% set status = "locked" %}
+                    {% endif %}
+                    {% set pred = odds_predictions.get(match.id) %}
+
+                    <tr class="match-row {{ status }}">
+                        <td class="col-kickoff">{{ match.match_date.strftime("%Y-%m-%d %H:%M") if match.match_date else "TBD" }}</td>
+                        <td>{{ match.home_team }}</td>
+                        <td>{{ match.away_team }}</td>
+                        <td>{{ status|capitalize }}</td>
+                        <td class="col-prediction">
+                            {% if status == "open" %}
+                                <form method="POST" action="{{ url_for('main.predict_outcome_inline', match_id=match.id) }}" class="odds-inline-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="selected_date" value="{{ selected_date }}">
+                                    <input type="hidden" name="competition" value="odds">
+                                    <select name="predicted_outcome" required>
+                                        <option value="">Choose</option>
+                                        <option value="home" {% if pred and pred.predicted_outcome == 'home' %}selected{% endif %}>{{ match.home_team }}</option>
+                                        <option value="draw" {% if pred and pred.predicted_outcome == 'draw' %}selected{% endif %}>Draw</option>
+                                        <option value="away" {% if pred and pred.predicted_outcome == 'away' %}selected{% endif %}>{{ match.away_team }}</option>
+                                    </select>
+                                    <button type="submit">{% if pred %}Update{% else %}Save{% endif %}</button>
+                                </form>
+                            {% elif pred %}
+                                {% if pred.predicted_outcome == 'home' %}
+                                    {{ match.home_team }}
+                                {% elif pred.predicted_outcome == 'away' %}
+                                    {{ match.away_team }}
+                                {% else %}
+                                    Draw
+                                {% endif %}
+                            {% else %}
+                                No prediction
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ "%.2f"|format(match.home_odds) if match.home_odds is not none else "-" }} /
+                            {{ "%.2f"|format(match.draw_odds) if match.draw_odds is not none else "-" }} /
+                            {{ "%.2f"|format(match.away_odds) if match.away_odds is not none else "-" }}
+                        </td>
+                        <td>
+                            {% if match.is_finished() %}
+                                {{ match.home_score }} - {{ match.away_score }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ "%.2f"|format(pred.points) if pred else "0.00" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
 {% endblock %}
