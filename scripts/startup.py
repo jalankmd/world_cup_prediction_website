@@ -11,6 +11,12 @@ app = create_app()
 
 with app.app_context():
     db.create_all()
+    # Fix password_hash column if it was created with the old VARCHAR(128) size
+    try:
+        db.session.execute(db.text("ALTER TABLE users ALTER COLUMN password_hash TYPE VARCHAR(512)"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
     if Match.query.count() == 0:
         from scripts.seed_matches import seed_matches, seed_knockout_matches
