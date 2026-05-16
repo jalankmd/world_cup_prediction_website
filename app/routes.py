@@ -15,7 +15,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 
 logger = logging.getLogger(__name__)
 from flask_login import login_required, login_user, logout_user, current_user
-import resend
+import requests
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from app.models import (
     Competition,
@@ -167,29 +167,40 @@ def _decode_verification_token(token, max_age=3600):
 
 
 def _send_verification_email(user):
-    resend.api_key = current_app.config["RESEND_API_KEY"]
     token = _make_verification_token(user.email)
     verify_url = url_for("main.verify_email", token=token, _external=True)
-    resend.Emails.send({
-        "from": current_app.config["MAIL_SENDER"],
-        "to": [user.email],
-        "subject": "Verify your World Cup Predictor account",
-        "text": (
-            f"Hi {user.first_name},\n\n"
-            f"Thanks for registering! Please verify your email address by clicking the link below:\n\n"
-            f"{verify_url}\n\n"
-            f"This link expires in 1 hour. If you didn't create an account, you can ignore this email.\n\n"
-            f"World Cup Predictor"
-        ),
-        "html": (
-            f"<p>Hi {user.first_name},</p>"
-            f"<p>Thanks for registering! Please verify your email address:</p>"
-            f"<p><a href=\"{verify_url}\" style=\"background:#28a745;color:#fff;padding:10px 20px;"
-            f"border-radius:6px;text-decoration:none;font-weight:bold;\">Verify Email</a></p>"
-            f"<p>This link expires in 1 hour.</p>"
-            f"<p>If you didn't create an account, you can ignore this email.</p>"
-        ),
-    })
+    resp = requests.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={
+            "api-key": current_app.config["BREVO_API_KEY"],
+            "Content-Type": "application/json",
+        },
+        json={
+            "sender": {
+                "name": current_app.config["MAIL_SENDER_NAME"],
+                "email": current_app.config["MAIL_SENDER_EMAIL"],
+            },
+            "to": [{"email": user.email}],
+            "subject": "Verify your World Cup Predictor account",
+            "textContent": (
+                f"Hi {user.first_name},\n\n"
+                f"Thanks for registering! Please verify your email address by clicking the link below:\n\n"
+                f"{verify_url}\n\n"
+                f"This link expires in 1 hour. If you didn't create an account, you can ignore this email.\n\n"
+                f"World Cup Predictor"
+            ),
+            "htmlContent": (
+                f"<p>Hi {user.first_name},</p>"
+                f"<p>Thanks for registering! Please verify your email address:</p>"
+                f"<p><a href=\"{verify_url}\" style=\"background:#28a745;color:#fff;padding:10px 20px;"
+                f"border-radius:6px;text-decoration:none;font-weight:bold;\">Verify Email</a></p>"
+                f"<p>This link expires in 1 hour.</p>"
+                f"<p>If you didn't create an account, you can ignore this email.</p>"
+            ),
+        },
+        timeout=10,
+    )
+    resp.raise_for_status()
 
 
 # ---------------------------

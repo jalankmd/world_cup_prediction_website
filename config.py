@@ -8,9 +8,10 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Resend (transactional email)
-    RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-    MAIL_SENDER = os.environ.get("MAIL_SENDER", "World Cup Predictor <onboarding@resend.dev>")
+    # Brevo (transactional email)
+    BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+    MAIL_SENDER_NAME = os.environ.get("MAIL_SENDER_NAME", "World Cup Predictor")
+    MAIL_SENDER_EMAIL = os.environ.get("MAIL_SENDER_EMAIL")
 
 class DevelopmentConfig(Config):
     """Development-specific config"""
