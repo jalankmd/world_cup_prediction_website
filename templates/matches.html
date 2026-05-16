@@ -220,7 +220,7 @@
                     <th>Away Team</th>
                     <th>Status</th>
                     <th class="col-prediction">Your Pick (Win/Draw)</th>
-                    <th>Odds (H / D / A)</th>
+                    <th class="col-odds">Odds (H / D / A)</th>
                     <th>Final Score</th>
                     <th>Points</th>
                 </tr>
@@ -266,7 +266,7 @@
                                 No prediction
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="col-odds">
                             {{ "%.2f"|format(match.home_odds) if match.home_odds is not none else "-" }} /
                             {{ "%.2f"|format(match.draw_odds) if match.draw_odds is not none else "-" }} /
                             {{ "%.2f"|format(match.away_odds) if match.away_odds is not none else "-" }}
