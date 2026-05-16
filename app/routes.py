@@ -9,7 +9,11 @@ This file defines all the Flask routes using a blueprint (`bp`).
 - Admin dashboard
 """
 
+import logging
+
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
+
+logger = logging.getLogger(__name__)
 from flask_login import login_required, login_user, logout_user, current_user
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
@@ -228,11 +232,10 @@ def register():
 
         try:
             _send_verification_email(user)
-            flash("Account created! Check your email to verify your account before logging in.", "success")
         except Exception:
-            flash("Account created, but we couldn't send the verification email. Contact the admin.", "danger")
+            logger.exception("Failed to send verification email to %s", user.email)
 
-        return redirect(url_for("main.verify_sent"))
+        return redirect(url_for("main.verify_sent", email=user.email))
 
     return render_template("register.html", form=form)
 
@@ -279,7 +282,8 @@ def logout():
 # ---------------------------
 @bp.route("/verify-sent")
 def verify_sent():
-    return render_template("verify_sent.html")
+    email = request.args.get("email", "")
+    return render_template("verify_sent.html", email=email)
 
 
 @bp.route("/verify-email/<token>")

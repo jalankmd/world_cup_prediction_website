@@ -3,9 +3,17 @@
 {% block content %}
 <div class="verify-sent-container">
     <div class="verify-sent-card">
-        <div class="verify-sent-icon">📧</div>
-        <h2>Check your email</h2>
-        <p>We've sent a verification link to your email address. Click the link in the email to activate your account.</p>
+        <div class="verify-sent-icon">✅</div>
+        <h2>Account created!</h2>
+        <p>
+            We've sent a verification link to
+            {% if email %}
+                <strong>{{ email }}</strong>
+            {% else %}
+                your email address
+            {% endif %}.
+            Click the link in the email to activate your account.
+        </p>
         <p class="meta-line">The link expires in 1 hour. Check your spam folder if you don't see it.</p>
 
         <hr class="verify-divider">
@@ -13,7 +21,8 @@
         <p class="meta-line">Didn't receive it?</p>
         <form method="POST" action="{{ url_for('main.resend_verification') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="email" name="email" placeholder="Your email address" required class="verify-email-input">
+            <input type="email" name="email" placeholder="Your email address"
+                   value="{{ email }}" required class="verify-email-input">
             <button type="submit" class="btn-resend">Resend verification email</button>
         </form>
 
