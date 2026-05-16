@@ -28,8 +28,7 @@ def create_app(config_class=None):
     if config_class is not None:
         app.config.from_object(config_class)
     else:
-        env = os.environ.get("FLASK_ENV", "development")
-        if env == "production":
+        if os.environ.get("DATABASE_URL") or os.environ.get("FLASK_ENV") == "production":
             from config import ProductionConfig
             app.config.from_object(ProductionConfig)
         else:
