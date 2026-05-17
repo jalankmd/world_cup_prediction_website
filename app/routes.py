@@ -524,6 +524,14 @@ def predict_podium():
 
 
 # ---------------------------
+# Rules
+# ---------------------------
+@bp.route("/rules")
+@login_required
+def rules():
+    return render_template("rules.html")
+
+
 # Leaderboard
 # ---------------------------
 @bp.route("/leaderboard")

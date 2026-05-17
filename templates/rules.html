@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="rules-page">
+    <h2>Rules &amp; Points System</h2>
+
+    <section class="rules-section">
+        <h3>Entry Fee</h3>
+        <p class="rules-entry-fee">$20 CAD per competition &mdash; $40 CAD total for both</p>
+    </section>
+
+    <div class="rules-grid">
+
+        <section class="rules-panel">
+            <h3>Competition 1: Score Predictor</h3>
+
+            <h4>How to earn points</h4>
+            <table class="rules-table">
+                <thead>
+                    <tr><th>Prediction</th><th>Points</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Exact score (e.g. 2&ndash;1 = 2&ndash;1)</td><td>3 pts</td></tr>
+                    <tr><td>Correct outcome only (right winner or draw)</td><td>2 pts</td></tr>
+                    <tr><td>Wrong outcome</td><td>0 pts</td></tr>
+                </tbody>
+            </table>
+
+            <h4>Stage bonuses <span class="rules-note">(added on top of base points)</span></h4>
+            <table class="rules-table">
+                <thead>
+                    <tr><th>Stage</th><th>Bonus</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Group stage</td><td>+0</td></tr>
+                    <tr><td>Round of 32 / Round of 16 / Quarter-final</td><td>+1</td></tr>
+                    <tr><td>Semi-final &amp; Final</td><td>+2</td></tr>
+                    <tr><td>Third-place playoff</td><td>+1</td></tr>
+                </tbody>
+            </table>
+
+            <h4>Bonus picks</h4>
+            <table class="rules-table">
+                <thead>
+                    <tr><th>Pick</th><th>Points</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Group qualifier &mdash; each correct team out of 2</td><td>1 pt each</td></tr>
+                    <tr><td>Podium &mdash; correct Champion</td><td>10 pts</td></tr>
+                    <tr><td>Podium &mdash; correct Runner-up</td><td>6 pts</td></tr>
+                    <tr><td>Podium &mdash; correct Third place</td><td>3 pts</td></tr>
+                </tbody>
+            </table>
+
+            <h4>Prediction deadlines</h4>
+            <ul class="rules-list">
+                <li><strong>Match predictions</strong> &mdash; lock at kick-off. Once a match starts you cannot change your score.</li>
+                <li><strong>Group qualifier picks</strong> &mdash; lock when the first match in that group kicks off.</li>
+                <li><strong>Podium picks</strong> &mdash; lock when the very first match of the tournament kicks off.</li>
+            </ul>
+        </section>
+
+        <section class="rules-panel">
+            <h3>Competition 2: Odds Predictor</h3>
+
+            <h4>How to earn points</h4>
+            <p>Pick the result of each match: <strong>Home win</strong>, <strong>Draw</strong>, or <strong>Away win</strong>.</p>
+            <table class="rules-table">
+                <thead>
+                    <tr><th>Outcome</th><th>Points</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Correct pick</td><td>The displayed odds for that result (e.g. 2.50 pts)</td></tr>
+                    <tr><td>Wrong pick</td><td>0 pts</td></tr>
+                </tbody>
+            </table>
+            <p class="rules-note">Points are decimal — the riskier the pick, the higher the reward.</p>
+
+            <h4>Prediction deadlines</h4>
+            <ul class="rules-list">
+                <li><strong>Match predictions</strong> &mdash; lock at kick-off. Odds are fixed at the time you save your pick.</li>
+            </ul>
+
+            <h4>Example</h4>
+            <p>If Morocco is listed at <strong>3.40</strong> odds to win and they do win, you earn <strong>3.40 pts</strong> for that match.</p>
+        </section>
+
+    </div>
+
+    <section class="rules-section rules-general">
+        <h3>General Rules</h3>
+        <ul class="rules-list">
+            <li>You must have a valid group code to register.</li>
+            <li>Each player competes independently — no team play.</li>
+            <li>The admin enters all official results. Points are updated shortly after each match ends.</li>
+            <li>Locked predictions cannot be changed, even if there is a technical issue.</li>
+            <li>The player with the most points at the end of the tournament wins each competition.</li>
+        </ul>
+    </section>
+</div>
+{% endblock %}
