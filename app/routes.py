@@ -590,6 +590,70 @@ def predict_podium():
 
 
 # ---------------------------
+# User Predictions View
+# ---------------------------
+@bp.route("/predictions")
+@login_required
+def user_predictions():
+    if current_user.is_admin:
+        return redirect(url_for("main.admin_predictions"))
+
+    user_comps = list(current_user.competitions)
+    if not user_comps:
+        flash("You are not assigned to a group yet.", "danger")
+        return redirect(url_for("main.home"))
+
+    selected_comp_id = request.args.get("group", type=int)
+    if not selected_comp_id or not any(c.id == selected_comp_id for c in user_comps):
+        selected_comp_id = current_user.competition_id or user_comps[0].id
+
+    selected_comp = next(c for c in user_comps if c.id == selected_comp_id)
+
+    pred_tab = request.args.get("tab", "classic")
+    if pred_tab not in {"classic", "odds", "qualifiers", "podium"}:
+        pred_tab = "classic"
+    if pred_tab in {"classic", "qualifiers", "podium"} and not selected_comp.include_tournament1:
+        pred_tab = "odds"
+    if pred_tab == "odds" and not selected_comp.include_tournament2:
+        pred_tab = "classic"
+
+    users = sorted(
+        [u for u in selected_comp.members if not u.is_admin],
+        key=lambda u: u.username.lower(),
+    )
+
+    pred_map = {}
+    if pred_tab == "classic":
+        preds = Prediction.query.filter_by(competition_id=selected_comp_id).all()
+        pred_map = {(p.user_id, p.match_id): p for p in preds}
+    elif pred_tab == "odds":
+        preds = OddsPrediction.query.filter_by(competition_id=selected_comp_id).all()
+        pred_map = {(p.user_id, p.match_id): p for p in preds}
+    elif pred_tab == "qualifiers":
+        preds = GroupQualifierPrediction.query.filter_by(competition_id=selected_comp_id).all()
+        pred_map = {(p.user_id, p.group_name): p for p in preds}
+    elif pred_tab == "podium":
+        preds = PodiumPrediction.query.filter_by(competition_id=selected_comp_id).all()
+        pred_map = {p.user_id: p for p in preds}
+
+    all_matches = Match.query.order_by(Match.match_date).all()
+
+    group_tabs = [{"value": str(c.id), "label": c.name} for c in user_comps] if len(user_comps) > 1 else []
+
+    return render_template(
+        "user_predictions.html",
+        group_tabs=group_tabs,
+        selected_comp_id=str(selected_comp_id),
+        selected_comp=selected_comp,
+        users=users,
+        matches=all_matches,
+        pred_tab=pred_tab,
+        pred_map=pred_map,
+        group_teams=GROUP_TEAMS,
+    )
+
+
+# ---------------------------
 # Rules
 # ---------------------------
 @bp.route("/rules")
