@@ -337,7 +337,7 @@ def matches():
         flash("Admins use the Results Entry page to enter outcomes.", "info")
         return redirect(url_for("main.admin_results", admin_tab="classic"))
 
-    all_matches = Match.query.order_by(Match.match_date).all()
+    all_matches = Match.query.filter_by(stage="group").order_by(Match.match_date).all()
 
     # Determine the active competition context
     group_id = request.args.get("group_id", type=int) or current_user.competition_id

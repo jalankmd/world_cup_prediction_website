@@ -97,6 +97,31 @@ setInterval(updateCountdown, 1000);
 </script>
 
 <div class="pred-progress-wrap">
+    <div class="pred-checklist">
+        {% if competition == 'classic' %}
+            <div class="pred-checklist-item {% if classic_pred_count == total_match_count %}done{% endif %}">
+                <span class="pred-check-icon">{% if classic_pred_count == total_match_count %}✓{% else %}○{% endif %}</span>
+                <span>Score predictions</span>
+                <span class="pred-check-count">{{ classic_pred_count }}/{{ total_match_count }}</span>
+            </div>
+            <div class="pred-checklist-item {% if qualifier_pred_count == 12 %}done{% endif %}">
+                <span class="pred-check-icon">{% if qualifier_pred_count == 12 %}✓{% else %}○{% endif %}</span>
+                <span>Group qualifier picks</span>
+                <span class="pred-check-count">{{ qualifier_pred_count }}/12 groups</span>
+            </div>
+            <div class="pred-checklist-item {% if podium_prediction %}done{% endif %}">
+                <span class="pred-check-icon">{% if podium_prediction %}✓{% else %}○{% endif %}</span>
+                <span>Champion picks</span>
+                <span class="pred-check-count">{% if podium_prediction %}Done{% else %}Not done{% endif %}</span>
+            </div>
+        {% else %}
+            <div class="pred-checklist-item {% if odds_pred_count == total_match_count %}done{% endif %}">
+                <span class="pred-check-icon">{% if odds_pred_count == total_match_count %}✓{% else %}○{% endif %}</span>
+                <span>Odds predictions</span>
+                <span class="pred-check-count">{{ odds_pred_count }}/{{ total_match_count }}</span>
+            </div>
+        {% endif %}
+    </div>
     {% if competition == 'classic' %}
         <div class="pred-progress-row">
             <span class="pred-progress-label">Score predictions: {{ classic_pred_count }}/{{ total_match_count }}</span>
@@ -251,8 +276,8 @@ setInterval(updateCountdown, 1000);
     </section>
 
     <section class="bonus-section">
-        <h3>Podium Picks</h3>
-        <p>Predict the top 3 teams. Locks when the first match kicks off. Points: Champion 10 &bull; Runner-up 6 &bull; Third place 3.</p>
+        <h3>Champion Picks</h3>
+        <p>Pick 3 teams you think will win the World Cup. If the champion matches your 1st pick you earn <strong>10 pts</strong>, 2nd pick <strong>6 pts</strong>, 3rd pick <strong>3 pts</strong>. Locks when the first match kicks off.</p>
 
         {% if podium_locked %}
             <span class="podium-locked-notice">Picks are locked — the tournament has begun.</span>
@@ -266,36 +291,36 @@ setInterval(updateCountdown, 1000);
             <input type="hidden" name="competition" value="classic">
             <input type="hidden" name="group_id" value="{{ active_group_id }}">
 
-            <label>Champion</label>
+            <label>1st Pick <span class="pick-pts">(10 pts)</span></label>
             <select name="champion_team" {% if podium_locked %}disabled{% endif %} required>
-                <option value="">Select champion</option>
+                <option value="">Select a team</option>
                 {% for team in all_teams %}
                     <option value="{{ team }}" {% if podium_prediction and podium_prediction.champion_team == team %}selected{% endif %}>{{ team }}</option>
                 {% endfor %}
             </select>
 
-            <label>Runner-up</label>
+            <label>2nd Pick <span class="pick-pts">(6 pts)</span></label>
             <select name="runner_up_team" {% if podium_locked %}disabled{% endif %} required>
-                <option value="">Select runner-up</option>
+                <option value="">Select a team</option>
                 {% for team in all_teams %}
                     <option value="{{ team }}" {% if podium_prediction and podium_prediction.runner_up_team == team %}selected{% endif %}>{{ team }}</option>
                 {% endfor %}
             </select>
 
-            <label>Third Place</label>
+            <label>3rd Pick <span class="pick-pts">(3 pts)</span></label>
             <select name="third_place_team" {% if podium_locked %}disabled{% endif %} required>
-                <option value="">Select third place</option>
+                <option value="">Select a team</option>
                 {% for team in all_teams %}
                     <option value="{{ team }}" {% if podium_prediction and podium_prediction.third_place_team == team %}selected{% endif %}>{{ team }}</option>
                 {% endfor %}
             </select>
 
             {% if not podium_locked %}
-                <button type="submit">Save Podium Picks</button>
+                <button type="submit">Save Champion Picks</button>
             {% endif %}
         </form>
         {% if podium_prediction %}
-            <p class="meta-line">Your podium points: {{ podium_prediction.points }}</p>
+            <p class="meta-line">Your champion pick points: {{ podium_prediction.points }}</p>
         {% endif %}
     </section>
 {% else %}

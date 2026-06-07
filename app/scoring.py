@@ -114,18 +114,21 @@ def update_group_qualifier_points():
 
 
 def update_podium_points():
-    """Score podium predictions using 10/6/3 for exact positional picks."""
+    """Score champion picks: all 3 picks are guesses for the World Cup winner.
+    1st pick = 10 pts, 2nd pick = 6 pts, 3rd pick = 3 pts if it matches the champion."""
     outcome = TournamentOutcome.query.first()
     predictions = PodiumPrediction.query.all()
 
     for pred in predictions:
         points = 0
-        if outcome and outcome.champion_team and pred.champion_team == outcome.champion_team:
-            points += 10
-        if outcome and outcome.runner_up_team and pred.runner_up_team == outcome.runner_up_team:
-            points += 6
-        if outcome and outcome.third_place_team and pred.third_place_team == outcome.third_place_team:
-            points += 3
+        if outcome and outcome.champion_team:
+            champ = outcome.champion_team
+            if pred.champion_team == champ:
+                points += 10
+            elif pred.runner_up_team == champ:
+                points += 6
+            elif pred.third_place_team == champ:
+                points += 3
         pred.points = points
 
 
