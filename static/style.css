@@ -1008,3 +1008,33 @@ button:hover {
     gap: 6px;
     align-items: center;
 }
+
+/* ===========================
+   Admin Predictions Table
+   =========================== */
+.admin-pred-table th,
+.admin-pred-table td {
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 6px 10px;
+}
+
+.admin-pred-table .pred-cell {
+    text-align: center;
+    color: #666;
+}
+
+.admin-pred-table .pred-cell.has-pred {
+    color: #1a1a1a;
+}
+
+.admin-pred-table .pred-empty {
+    color: #bbb;
+}
+
+.admin-pred-table .pred-pts {
+    display: block;
+    font-size: 11px;
+    color: #2e7d32;
+    font-weight: 600;
+}

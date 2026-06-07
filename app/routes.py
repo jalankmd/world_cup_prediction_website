@@ -724,6 +724,64 @@ def leaderboard():
 
 
 # ---------------------------
+# Admin Predictions View
+# ---------------------------
+@bp.route("/admin/predictions")
+@login_required
+def admin_predictions():
+    if not getattr(current_user, "is_admin", False):
+        return "Access denied", 403
+
+    groups = Competition.query.order_by(Competition.name.asc()).all()
+
+    selected_group_id = request.args.get("group", type=int)
+    if not selected_group_id and groups:
+        selected_group_id = groups[0].id
+
+    pred_tab = request.args.get("tab", "classic")
+    if pred_tab not in {"classic", "odds", "qualifiers", "podium"}:
+        pred_tab = "classic"
+
+    selected_comp = db.session.get(Competition, selected_group_id) if selected_group_id else None
+    users = []
+    pred_map = {}
+
+    if selected_comp:
+        users = sorted(
+            [u for u in selected_comp.members if not u.is_admin],
+            key=lambda u: u.username.lower(),
+        )
+
+        if pred_tab == "classic":
+            preds = Prediction.query.filter_by(competition_id=selected_group_id).all()
+            pred_map = {(p.user_id, p.match_id): p for p in preds}
+        elif pred_tab == "odds":
+            preds = OddsPrediction.query.filter_by(competition_id=selected_group_id).all()
+            pred_map = {(p.user_id, p.match_id): p for p in preds}
+        elif pred_tab == "qualifiers":
+            preds = GroupQualifierPrediction.query.filter_by(competition_id=selected_group_id).all()
+            pred_map = {(p.user_id, p.group_name): p for p in preds}
+        elif pred_tab == "podium":
+            preds = PodiumPrediction.query.filter_by(competition_id=selected_group_id).all()
+            pred_map = {p.user_id: p for p in preds}
+
+    all_matches = Match.query.order_by(Match.match_date).all()
+    group_tabs = [{"value": str(g.id), "label": g.name} for g in groups]
+
+    return render_template(
+        "admin_predictions.html",
+        group_tabs=group_tabs,
+        selected_group_id=str(selected_group_id) if selected_group_id else None,
+        selected_comp=selected_comp,
+        users=users,
+        matches=all_matches,
+        pred_tab=pred_tab,
+        pred_map=pred_map,
+        group_teams=GROUP_TEAMS,
+    )
+
+
+# ---------------------------
 # Admin Dashboard
 # ---------------------------
 @bp.route("/admin", methods=["GET", "POST"])

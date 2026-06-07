@@ -28,6 +28,7 @@
                 {% if current_user.is_authenticated %}
                     {% if current_user.is_admin %}
                         <li><a href="{{ url_for('main.admin_results', admin_tab='classic') }}">Results Entry</a></li>
+                        <li><a href="{{ url_for('main.admin_predictions') }}">Predictions</a></li>
                     {% else %}
                         <li><a href="{{ url_for('main.matches') }}">Matches</a></li>
                         <li><a href="{{ url_for('main.join_competition') }}">Join Group</a></li>

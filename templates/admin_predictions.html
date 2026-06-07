@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Submitted Predictions</h2>
+
+{% if group_tabs %}
+    <div class="date-tabs" role="tablist" aria-label="Select group">
+        {% for tab in group_tabs %}
+            <a
+                href="{{ url_for('main.admin_predictions', group=tab.value, tab=pred_tab) }}"
+                class="date-tab {% if selected_group_id == tab.value %}active{% endif %}"
+            >{{ tab.label }}</a>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if selected_comp %}
+    <p class="meta-line">Group: <strong>{{ selected_comp.name }}</strong> &mdash; {{ users|length }} participant{{ "s" if users|length != 1 else "" }}</p>
+
+    <div class="competition-tabs" role="tablist" aria-label="Select prediction type">
+        {% if selected_comp.include_tournament1 %}
+            <a href="{{ url_for('main.admin_predictions', group=selected_group_id, tab='classic') }}"
+               class="competition-tab {% if pred_tab == 'classic' %}active{% endif %}">Score Predictions</a>
+            <a href="{{ url_for('main.admin_predictions', group=selected_group_id, tab='qualifiers') }}"
+               class="competition-tab {% if pred_tab == 'qualifiers' %}active{% endif %}">Group Qualifiers</a>
+            <a href="{{ url_for('main.admin_predictions', group=selected_group_id, tab='podium') }}"
+               class="competition-tab {% if pred_tab == 'podium' %}active{% endif %}">Podium Picks</a>
+        {% endif %}
+        {% if selected_comp.include_tournament2 %}
+            <a href="{{ url_for('main.admin_predictions', group=selected_group_id, tab='odds') }}"
+               class="competition-tab {% if pred_tab == 'odds' %}active{% endif %}">Odds Predictions</a>
+        {% endif %}
+    </div>
+
+    {% if users %}
+
+        {# ── Score Predictions ─────────────────────────────────────────── #}
+        {% if pred_tab == 'classic' %}
+            <div class="matches-table-wrap">
+                <table class="matches-table admin-pred-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Match</th>
+                            <th>Result</th>
+                            {% for user in users %}
+                                <th>{{ user.username }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in matches %}
+                            {% set row_has_any = namespace(value=false) %}
+                            {% for user in users %}
+                                {% if pred_map.get((user.id, match.id)) %}
+                                    {% set row_has_any.value = true %}
+                                {% endif %}
+                            {% endfor %}
+                            <tr>
+                                <td class="col-kickoff">{{ match.match_date.strftime("%b %d") if match.match_date else "TBD" }}</td>
+                                <td>{{ match.home_team }} vs {{ match.away_team }}</td>
+                                <td>
+                                    {% if match.is_finished() %}
+                                        {{ match.home_score }}–{{ match.away_score }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                {% for user in users %}
+                                    {% set pred = pred_map.get((user.id, match.id)) %}
+                                    <td class="pred-cell {% if pred %}has-pred{% endif %}">
+                                        {% if pred %}
+                                            {{ pred.predicted_home_score }}–{{ pred.predicted_away_score }}
+                                            {% if match.is_finished() %}
+                                                <span class="pred-pts">({{ pred.points }}pts)</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="pred-empty">—</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {# ── Odds Predictions ──────────────────────────────────────────── #}
+        {% elif pred_tab == 'odds' %}
+            <div class="matches-table-wrap">
+                <table class="matches-table admin-pred-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Match</th>
+                            <th>Result</th>
+                            {% for user in users %}
+                                <th>{{ user.username }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in matches %}
+                            <tr>
+                                <td class="col-kickoff">{{ match.match_date.strftime("%b %d") if match.match_date else "TBD" }}</td>
+                                <td>{{ match.home_team }} vs {{ match.away_team }}</td>
+                                <td>
+                                    {% if match.is_finished() %}
+                                        {{ match.home_score }}–{{ match.away_score }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                {% for user in users %}
+                                    {% set pred = pred_map.get((user.id, match.id)) %}
+                                    <td class="pred-cell {% if pred %}has-pred{% endif %}">
+                                        {% if pred %}
+                                            {% if pred.predicted_outcome == 'home' %}{{ match.home_team }}
+                                            {% elif pred.predicted_outcome == 'away' %}{{ match.away_team }}
+                                            {% else %}Draw{% endif %}
+                                            {% if match.is_finished() %}
+                                                <span class="pred-pts">({{ "%.2f"|format(pred.points) }})</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="pred-empty">—</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {# ── Group Qualifier Predictions ───────────────────────────────── #}
+        {% elif pred_tab == 'qualifiers' %}
+            <div class="matches-table-wrap">
+                <table class="matches-table admin-pred-table">
+                    <thead>
+                        <tr>
+                            <th>Group</th>
+                            {% for user in users %}
+                                <th>{{ user.username }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for group_name in group_teams %}
+                            <tr>
+                                <td><strong>Group {{ group_name }}</strong></td>
+                                {% for user in users %}
+                                    {% set pred = pred_map.get((user.id, group_name)) %}
+                                    <td class="pred-cell {% if pred %}has-pred{% endif %}">
+                                        {% if pred %}
+                                            {{ pred.team_1 }}<br>{{ pred.team_2 }}
+                                            <span class="pred-pts">({{ pred.points }}pts)</span>
+                                        {% else %}
+                                            <span class="pred-empty">—</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {# ── Podium Picks ──────────────────────────────────────────────── #}
+        {% elif pred_tab == 'podium' %}
+            <div class="matches-table-wrap">
+                <table class="matches-table admin-pred-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Champion</th>
+                            <th>Runner-up</th>
+                            <th>Third Place</th>
+                            <th>Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            {% set pred = pred_map.get(user.id) %}
+                            <tr>
+                                <td><strong>{{ user.username }}</strong></td>
+                                {% if pred %}
+                                    <td>{{ pred.champion_team }}</td>
+                                    <td>{{ pred.runner_up_team }}</td>
+                                    <td>{{ pred.third_place_team }}</td>
+                                    <td>{{ pred.points }}</td>
+                                {% else %}
+                                    <td colspan="4" class="pred-empty">No pick submitted</td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+    {% else %}
+        <p class="meta-line">No participants in this group yet.</p>
+    {% endif %}
+
+{% else %}
+    <p class="meta-line">No groups found. Create a group first.</p>
+{% endif %}
+{% endblock %}
