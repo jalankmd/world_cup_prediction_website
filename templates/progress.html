@@ -19,6 +19,13 @@
         <div class="progress-stat-label">Comp 1 Points</div>
         <div class="progress-stat-value">{{ current_t1 }}</div>
         <div class="progress-stat-rank">Rank {{ current_t1_rank }} of {{ total_members }}</div>
+        <div class="progress-stat-accuracy">
+            {% if t1_accuracy is not none %}
+                Outcome accuracy: <strong>{{ t1_accuracy }}%</strong> <span class="accuracy-detail">({{ t1_correct }}/{{ t1_total }})</span>
+            {% else %}
+                Outcome accuracy: <span class="accuracy-detail">no results yet</span>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
     {% if include_t2 %}
@@ -26,6 +33,13 @@
         <div class="progress-stat-label">Comp 2 Points</div>
         <div class="progress-stat-value">{{ "%.2f"|format(current_t2) }}</div>
         <div class="progress-stat-rank">Rank {{ current_t2_rank }} of {{ total_members }}</div>
+        <div class="progress-stat-accuracy">
+            {% if t2_accuracy is not none %}
+                Outcome accuracy: <strong>{{ t2_accuracy }}%</strong> <span class="accuracy-detail">({{ t2_correct }}/{{ t2_total }})</span>
+            {% else %}
+                Outcome accuracy: <span class="accuracy-detail">no results yet</span>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
 </div>

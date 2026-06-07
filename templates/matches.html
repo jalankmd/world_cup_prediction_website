@@ -48,8 +48,21 @@
     {% endfor %}
 </div>
 
+{% if missing_soon > 0 %}
+<div class="missing-pred-banner urgent">
+    ⚠️ {{ missing_soon }} match{{ 'es' if missing_soon != 1 else '' }} lock{{ '' if missing_soon != 1 else 's' }} in the next 24 hours — you haven't predicted {{ 'them' if missing_soon != 1 else 'it' }} yet!
+</div>
+{% elif missing_total > 0 %}
+<div class="missing-pred-banner">
+    {{ missing_total }} upcoming match{{ 'es' if missing_total != 1 else '' }} still need{{ '' if missing_total != 1 else 's' }} a prediction.
+</div>
+{% endif %}
+
 <div class="et-clock-bar">
     🕐 Current time: <span id="et-clock">—</span>
+    {% if next_match %}
+        &nbsp;&nbsp;|&nbsp;&nbsp; Next kickoff ({{ next_match.home_team }} vs {{ next_match.away_team }}): <span id="next-kickoff-countdown">—</span>
+    {% endif %}
 </div>
 <script>
 function updateETClock() {
@@ -66,6 +79,21 @@ function updateETClock() {
 }
 updateETClock();
 setInterval(updateETClock, 1000);
+
+{% if next_kickoff_iso %}
+var kickoffTarget = new Date("{{ next_kickoff_iso }}");
+function updateCountdown() {
+    var diff = kickoffTarget - new Date();
+    var el = document.getElementById("next-kickoff-countdown");
+    if (diff <= 0) { el.textContent = "Kicked off!"; return; }
+    var h = Math.floor(diff / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+    el.textContent = (h > 0 ? h + "h " : "") + m + "m " + String(s).padStart(2,"0") + "s";
+}
+updateCountdown();
+setInterval(updateCountdown, 1000);
+{% endif %}
 </script>
 
 <div class="pred-progress-wrap">

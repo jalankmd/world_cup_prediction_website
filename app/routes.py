@@ -21,7 +21,7 @@ from app.models import (
 from app.forms import RegisterForm, LoginForm, PredictionForm, JoinCompetitionForm
 from app.scoring import update_all_points
 from app import db
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 bp = Blueprint("main", __name__)
 
@@ -178,6 +178,14 @@ def _assign_ranks(users_sorted, points_dict):
         ranks[u.id] = current_rank
         prev_pts = pts
     return ranks
+
+
+def _match_outcome(home_score, away_score):
+    if home_score > away_score:
+        return "home"
+    if home_score < away_score:
+        return "away"
+    return "draw"
 
 
 def _save_rank_snapshots():
@@ -413,6 +421,16 @@ def matches():
     odds_pred_count = len(odds_predictions)
     qualifier_pred_count = sum(1 for c in group_cards if c["prediction"])
 
+    # Missing predictions + next kickoff countdown
+    upcoming_open = [m for m in all_matches if m.match_date and not m.is_locked() and not m.is_finished()]
+    next_match = min(upcoming_open, key=lambda m: m.match_date, default=None)
+    next_kickoff_iso = next_match.match_date.strftime("%Y-%m-%dT%H:%M:%SZ") if next_match else None
+
+    soon_cutoff = now_utc + timedelta(hours=24)
+    active_pred_ids = set(predictions.keys()) if selected_competition == "classic" else set(odds_predictions.keys())
+    missing_soon = sum(1 for m in upcoming_open if m.match_date <= soon_cutoff and m.id not in active_pred_ids)
+    missing_total = sum(1 for m in upcoming_open if m.id not in active_pred_ids)
+
     return render_template(
         "matches.html",
         matches=filtered_matches,
@@ -436,6 +454,10 @@ def matches():
         classic_pred_count=classic_pred_count,
         odds_pred_count=odds_pred_count,
         qualifier_pred_count=qualifier_pred_count,
+        missing_soon=missing_soon,
+        missing_total=missing_total,
+        next_match=next_match,
+        next_kickoff_iso=next_kickoff_iso,
     )
 
 
@@ -807,6 +829,29 @@ def progress():
     t1_ranks_now = _assign_ranks(classic_sorted, t1_pts)
     t2_ranks_now = _assign_ranks(odds_sorted, t2_pts)
 
+    # Prediction accuracy
+    classic_finished = [
+        p for p in Prediction.query.filter_by(user_id=current_user.id, competition_id=selected_comp_id).all()
+        if p.match and p.match.is_finished()
+    ]
+    t1_total = len(classic_finished)
+    t1_correct = sum(
+        1 for p in classic_finished
+        if _match_outcome(p.predicted_home_score, p.predicted_away_score) == _match_outcome(p.match.home_score, p.match.away_score)
+    )
+    t1_accuracy = round(t1_correct / t1_total * 100) if t1_total else None
+
+    odds_finished = [
+        p for p in OddsPrediction.query.filter_by(user_id=current_user.id, competition_id=selected_comp_id).all()
+        if p.match and p.match.is_finished()
+    ]
+    t2_total = len(odds_finished)
+    t2_correct = sum(
+        1 for p in odds_finished
+        if _match_outcome(p.match.home_score, p.match.away_score) == p.predicted_outcome
+    )
+    t2_accuracy = round(t2_correct / t2_total * 100) if t2_total else None
+
     import json
     chart_data = json.dumps({
         "labels":    [s.snapshot_date.strftime("%b %d") for s in snapshots],
@@ -832,6 +877,12 @@ def progress():
         current_t2=t2_pts.get(current_user.id, 0),
         current_t1_rank=t1_ranks_now.get(current_user.id, 0),
         current_t2_rank=t2_ranks_now.get(current_user.id, 0),
+        t1_accuracy=t1_accuracy,
+        t2_accuracy=t2_accuracy,
+        t1_correct=t1_correct,
+        t1_total=t1_total,
+        t2_correct=t2_correct,
+        t2_total=t2_total,
     )
 
 
