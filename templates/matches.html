@@ -48,6 +48,26 @@
     {% endfor %}
 </div>
 
+<div class="et-clock-bar">
+    🕐 Current time: <span id="et-clock">—</span>
+</div>
+<script>
+function updateETClock() {
+    const now = new Date();
+    const et = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const h = et.getHours(), m = et.getMinutes(), s = et.getSeconds();
+    const hour = h % 12 || 12;
+    const ampm = h < 12 ? "AM" : "PM";
+    const mm = String(m).padStart(2, "0");
+    const ss = String(s).padStart(2, "0");
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const dateStr = `${months[et.getMonth()]} ${et.getDate()}`;
+    document.getElementById("et-clock").textContent = `${dateStr} ${hour}:${mm}:${ss} ${ampm} ET`;
+}
+updateETClock();
+setInterval(updateETClock, 1000);
+</script>
+
 <div class="pred-progress-wrap">
     {% if competition == 'classic' %}
         <div class="pred-progress-row">
