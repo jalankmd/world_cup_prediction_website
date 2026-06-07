@@ -1263,3 +1263,120 @@ button:hover {
         font-size: 20px;
     }
 }
+
+/* ===========================
+   Nav Dropdown
+   =========================== */
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown-toggle {
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a2e42;
+    border-radius: 6px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    z-index: 200;
+    min-width: 190px;
+    padding: 4px 0;
+    list-style: none;
+    margin: 0;
+}
+
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown.open .nav-dropdown-menu {
+    display: block;
+}
+
+.nav-dropdown-menu li {
+    margin: 0;
+}
+
+.nav-dropdown-menu a {
+    display: block;
+    padding: 10px 18px;
+    color: #d9e8f5;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    white-space: nowrap;
+}
+
+.nav-dropdown-menu a:hover {
+    background: rgba(255,255,255,0.08);
+    text-decoration: none;
+}
+
+.nav-dropdown-menu li:last-child a {
+    border-bottom: none;
+}
+
+/* ===========================
+   Progress Page
+   =========================== */
+.progress-stat-row {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+}
+
+.progress-stat-card {
+    background: #f4f8fc;
+    border: 1px solid #d7e4f0;
+    border-radius: 10px;
+    padding: 16px 24px;
+    min-width: 160px;
+    text-align: center;
+}
+
+.progress-stat-label {
+    font-size: 12px;
+    color: #6b8097;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.progress-stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #0b5ed7;
+    margin: 4px 0;
+}
+
+.progress-stat-rank {
+    font-size: 13px;
+    color: #435566;
+    font-weight: 600;
+}
+
+.progress-chart-wrap {
+    margin: 20px 0;
+    background: #fff;
+    border: 1px solid #d7dde5;
+    border-radius: 10px;
+    padding: 20px;
+    max-height: 420px;
+}
+
+.progress-no-data {
+    margin: 40px auto;
+    text-align: center;
+    color: #6b8097;
+    max-width: 400px;
+}
+
+.progress-no-data p {
+    font-size: 16px;
+}

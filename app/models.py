@@ -214,3 +214,20 @@ class TournamentOutcome(db.Model):
     champion_team = db.Column(db.String(50), nullable=True)
     runner_up_team = db.Column(db.String(50), nullable=True)
     third_place_team = db.Column(db.String(50), nullable=True)
+
+
+class RankSnapshot(db.Model):
+    __tablename__ = "rank_snapshots"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    competition_id = db.Column(db.Integer, db.ForeignKey("competitions.id"), nullable=False)
+    snapshot_date = db.Column(db.Date, nullable=False)
+    t1_points = db.Column(db.Integer, nullable=False, default=0)
+    t2_points = db.Column(db.Float, nullable=False, default=0.0)
+    t1_rank = db.Column(db.Integer, nullable=False, default=0)
+    t2_rank = db.Column(db.Integer, nullable=False, default=0)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'competition_id', 'snapshot_date', name='unique_user_comp_date_snap'),
+    )

@@ -15,6 +15,7 @@ from app.models import (
     GroupResult,
     PodiumPrediction,
     TournamentOutcome,
+    RankSnapshot,
     user_competitions,
 )
 from app.forms import RegisterForm, LoginForm, PredictionForm, JoinCompetitionForm
@@ -177,6 +178,38 @@ def _assign_ranks(users_sorted, points_dict):
         ranks[u.id] = current_rank
         prev_pts = pts
     return ranks
+
+
+def _save_rank_snapshots():
+    """Take a daily snapshot of every user's rank and points in each competition."""
+    from datetime import date
+    today = date.today()
+    for comp in Competition.query.all():
+        members = [u for u in comp.members if not u.is_admin]
+        if not members:
+            continue
+        t1_pts = {u.id: _t1_points_for_competition(u, comp.id) for u in members}
+        t2_pts = {u.id: _t2_points_for_competition(u, comp.id) for u in members}
+        classic_sorted = sorted(members, key=lambda u: t1_pts[u.id], reverse=True)
+        odds_sorted   = sorted(members, key=lambda u: t2_pts[u.id], reverse=True)
+        t1_ranks = _assign_ranks(classic_sorted, t1_pts)
+        t2_ranks = _assign_ranks(odds_sorted,    t2_pts)
+        for u in members:
+            snap = RankSnapshot.query.filter_by(
+                user_id=u.id, competition_id=comp.id, snapshot_date=today
+            ).first()
+            if snap:
+                snap.t1_points = t1_pts[u.id]
+                snap.t2_points = t2_pts[u.id]
+                snap.t1_rank   = t1_ranks[u.id]
+                snap.t2_rank   = t2_ranks[u.id]
+            else:
+                db.session.add(RankSnapshot(
+                    user_id=u.id, competition_id=comp.id, snapshot_date=today,
+                    t1_points=t1_pts[u.id], t2_points=t2_pts[u.id],
+                    t1_rank=t1_ranks[u.id], t2_rank=t2_ranks[u.id],
+                ))
+    db.session.commit()
 
 
 # ---------------------------
@@ -742,6 +775,67 @@ def h2h():
 
 
 # ---------------------------
+# My Progress
+# ---------------------------
+@bp.route("/progress")
+@login_required
+def progress():
+    if current_user.is_admin:
+        return redirect(url_for("main.leaderboard"))
+
+    user_comps = list(current_user.competitions)
+    if not user_comps:
+        flash("You are not assigned to a group yet.", "danger")
+        return redirect(url_for("main.home"))
+
+    selected_comp_id = request.args.get("group", type=int)
+    if not selected_comp_id or not any(c.id == selected_comp_id for c in user_comps):
+        selected_comp_id = current_user.competition_id or user_comps[0].id
+
+    selected_comp = next(c for c in user_comps if c.id == selected_comp_id)
+
+    snapshots = RankSnapshot.query.filter_by(
+        user_id=current_user.id, competition_id=selected_comp_id
+    ).order_by(RankSnapshot.snapshot_date).all()
+
+    members = [u for u in selected_comp.members if not u.is_admin]
+    total_members = len(members)
+    t1_pts = {u.id: _t1_points_for_competition(u, selected_comp_id) for u in members}
+    t2_pts = {u.id: _t2_points_for_competition(u, selected_comp_id) for u in members}
+    classic_sorted = sorted(members, key=lambda u: t1_pts[u.id], reverse=True)
+    odds_sorted    = sorted(members, key=lambda u: t2_pts[u.id], reverse=True)
+    t1_ranks_now = _assign_ranks(classic_sorted, t1_pts)
+    t2_ranks_now = _assign_ranks(odds_sorted, t2_pts)
+
+    import json
+    chart_data = json.dumps({
+        "labels":    [s.snapshot_date.strftime("%b %d") for s in snapshots],
+        "t1_rank":   [s.t1_rank   for s in snapshots],
+        "t2_rank":   [s.t2_rank   for s in snapshots],
+        "t1_points": [s.t1_points for s in snapshots],
+        "t2_points": [round(float(s.t2_points), 2) for s in snapshots],
+    })
+
+    group_tabs = [{"value": str(c.id), "label": c.name} for c in user_comps] if len(user_comps) > 1 else []
+
+    return render_template(
+        "progress.html",
+        chart_data=chart_data,
+        has_data=len(snapshots) > 0,
+        total_members=total_members,
+        selected_comp=selected_comp,
+        selected_comp_id=str(selected_comp_id),
+        group_tabs=group_tabs,
+        include_t1=bool(selected_comp.include_tournament1),
+        include_t2=bool(selected_comp.include_tournament2),
+        current_t1=t1_pts.get(current_user.id, 0),
+        current_t2=t2_pts.get(current_user.id, 0),
+        current_t1_rank=t1_ranks_now.get(current_user.id, 0),
+        current_t2_rank=t2_ranks_now.get(current_user.id, 0),
+    )
+
+
+# ---------------------------
 # Rules
 # ---------------------------
 @bp.route("/rules")
@@ -1143,6 +1237,7 @@ def admin_results():
         }
         db.session.commit()
         update_all_points()
+        _save_rank_snapshots()
         db.session.expire_all()
         gainers = []
         for uid, (uname, old_pts) in audit_snapshot.items():

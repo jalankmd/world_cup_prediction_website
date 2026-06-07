@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>My Progress</h2>
+
+{% if group_tabs %}
+    <div class="date-tabs" role="tablist">
+        {% for tab in group_tabs %}
+            <a href="{{ url_for('main.progress', group=tab.value) }}"
+               class="date-tab {% if selected_comp_id == tab.value %}active{% endif %}">{{ tab.label }}</a>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<p class="meta-line">Group: <strong>{{ selected_comp.name }}</strong></p>
+
+<div class="progress-stat-row">
+    {% if include_t1 %}
+    <div class="progress-stat-card">
+        <div class="progress-stat-label">Comp 1 Points</div>
+        <div class="progress-stat-value">{{ current_t1 }}</div>
+        <div class="progress-stat-rank">Rank {{ current_t1_rank }} of {{ total_members }}</div>
+    </div>
+    {% endif %}
+    {% if include_t2 %}
+    <div class="progress-stat-card">
+        <div class="progress-stat-label">Comp 2 Points</div>
+        <div class="progress-stat-value">{{ "%.2f"|format(current_t2) }}</div>
+        <div class="progress-stat-rank">Rank {{ current_t2_rank }} of {{ total_members }}</div>
+    </div>
+    {% endif %}
+</div>
+
+{% if has_data %}
+<div class="progress-chart-wrap">
+    <canvas id="rankChart"></canvas>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+var data = {{ chart_data | safe }};
+var ctx = document.getElementById('rankChart').getContext('2d');
+var datasets = [];
+{% if include_t1 %}
+datasets.push({
+    label: 'Comp 1 Rank',
+    data: data.t1_rank,
+    borderColor: '#0b5ed7',
+    backgroundColor: 'rgba(11,94,215,0.08)',
+    tension: 0.3,
+    fill: false,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+});
+{% endif %}
+{% if include_t2 %}
+datasets.push({
+    label: 'Comp 2 Rank',
+    data: data.t2_rank,
+    borderColor: '#e67e22',
+    backgroundColor: 'rgba(230,126,34,0.08)',
+    tension: 0.3,
+    fill: false,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+});
+{% endif %}
+new Chart(ctx, {
+    type: 'line',
+    data: { labels: data.labels, datasets: datasets },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                reverse: true,
+                min: 1,
+                max: {{ total_members }},
+                ticks: { stepSize: 1, precision: 0 },
+                title: { display: true, text: 'Rank (1 = best)' }
+            },
+            x: { title: { display: true, text: 'Date' } }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    afterLabel: function(ctx) {
+                        var i = ctx.dataIndex;
+                        if (ctx.dataset.label.includes('Comp 1')) {
+                            return 'Points: ' + data.t1_points[i];
+                        }
+                        return 'Points: ' + data.t2_points[i];
+                    }
+                }
+            },
+            legend: { position: 'top' }
+        }
+    }
+});
+</script>
+{% else %}
+<div class="progress-no-data">
+    <p>No ranking history yet.</p>
+    <p class="meta-line">Rankings are recorded each time the admin saves match results. Check back after the first games are scored.</p>
+</div>
+{% endif %}
+{% endblock %}

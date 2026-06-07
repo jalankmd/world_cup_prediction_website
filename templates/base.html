@@ -18,31 +18,31 @@
     <header>
         <nav>
             <ul>
-                <!-- Brand / Logo -->
                 <li class="brand">⚽ World Cup Predictor</li>
-
-                <!-- Navigation links for all users -->
                 <li><a href="{{ url_for('main.home') }}">Home</a></li>
 
-                <!-- Links for authenticated users -->
                 {% if current_user.is_authenticated %}
                     {% if current_user.is_admin %}
                         <li><a href="{{ url_for('main.admin_results', admin_tab='classic') }}">Results Entry</a></li>
                         <li><a href="{{ url_for('main.admin_predictions') }}">Predictions</a></li>
-                    {% else %}
-                        <li><a href="{{ url_for('main.matches') }}">Matches</a></li>
-                        <li><a href="{{ url_for('main.user_predictions') }}">Predictions</a></li>
-                        <li><a href="{{ url_for('main.h2h') }}">Compare</a></li>
-                        <li><a href="{{ url_for('main.join_competition') }}">Join Group</a></li>
-                        <li><a href="{{ url_for('main.rules') }}">Rules & Points</a></li>
-                    {% endif %}
-                    <li><a href="{{ url_for('main.leaderboard') }}">Leaderboard</a></li>
-                        {% if current_user.is_admin %}
+                        <li><a href="{{ url_for('main.leaderboard') }}">Leaderboard</a></li>
                         <li><a href="{{ url_for('main.admin_dashboard') }}">Group Admin</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('main.matches') }}">Your Predictions</a></li>
+                        <li><a href="{{ url_for('main.leaderboard') }}">Leaderboard</a></li>
+                        <li class="nav-dropdown">
+                            <a href="#" class="nav-dropdown-toggle" onclick="toggleDropdown(event, this)">Others ▾</a>
+                            <ul class="nav-dropdown-menu">
+                                <li><a href="{{ url_for('main.user_predictions') }}">Others' Predictions</a></li>
+                                <li><a href="{{ url_for('main.h2h') }}">Compare</a></li>
+                                <li><a href="{{ url_for('main.progress') }}">My Progress</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="{{ url_for('main.rules') }}">Rules & Prizes</a></li>
+                        <li><a href="{{ url_for('main.join_competition') }}">Join Group</a></li>
                     {% endif %}
                     <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
                 {% else %}
-                    <!-- Links for non-authenticated users -->
                     <li><a href="{{ url_for('main.login') }}">Login</a></li>
                     <li><a href="{{ url_for('main.register') }}">Register</a></li>
                 {% endif %}
@@ -75,5 +75,18 @@
     <footer>
         <p>&copy; 2026 World Cup Predictions</p>
     </footer>
+<script>
+function toggleDropdown(e, el) {
+    e.preventDefault();
+    var li = el.parentElement;
+    li.classList.toggle('open');
+    document.addEventListener('click', function handler(ev) {
+        if (!li.contains(ev.target)) {
+            li.classList.remove('open');
+            document.removeEventListener('click', handler);
+        }
+    });
+}
+</script>
 </body>
 </html>
