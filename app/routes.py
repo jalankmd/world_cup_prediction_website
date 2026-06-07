@@ -165,6 +165,20 @@ def _t2_points_for_competition(user, competition_id):
     return int(round(sum(p.points for p in user.odds_predictions if p.competition_id == competition_id)))
 
 
+def _assign_ranks(users_sorted, points_dict):
+    """Assign tied ranks to a pre-sorted descending list of users."""
+    ranks = {}
+    current_rank = 1
+    prev_pts = None
+    for i, u in enumerate(users_sorted):
+        pts = points_dict[u.id]
+        if pts != prev_pts:
+            current_rank = i + 1
+        ranks[u.id] = current_rank
+        prev_pts = pts
+    return ranks
+
+
 # ---------------------------
 # Home Page
 # ---------------------------
@@ -361,6 +375,11 @@ def matches():
 
     user_all_competitions = list(current_user.competitions)
 
+    total_match_count = len(all_matches)
+    classic_pred_count = len(predictions)
+    odds_pred_count = len(odds_predictions)
+    qualifier_pred_count = sum(1 for c in group_cards if c["prediction"])
+
     return render_template(
         "matches.html",
         matches=filtered_matches,
@@ -380,6 +399,10 @@ def matches():
         user_group=user_group,
         active_group_id=active_group_id,
         user_all_competitions=user_all_competitions,
+        total_match_count=total_match_count,
+        classic_pred_count=classic_pred_count,
+        odds_pred_count=odds_pred_count,
+        qualifier_pred_count=qualifier_pred_count,
     )
 
 
@@ -654,6 +677,71 @@ def user_predictions():
 
 
 # ---------------------------
+# Head-to-Head Comparison
+# ---------------------------
+@bp.route("/h2h")
+@login_required
+def h2h():
+    if current_user.is_admin:
+        return redirect(url_for("main.leaderboard"))
+
+    user_comps = list(current_user.competitions)
+    if not user_comps:
+        flash("You are not assigned to a group yet.", "danger")
+        return redirect(url_for("main.home"))
+
+    selected_comp_id = request.args.get("group", type=int)
+    if not selected_comp_id or not any(c.id == selected_comp_id for c in user_comps):
+        selected_comp_id = current_user.competition_id or user_comps[0].id
+
+    selected_comp = next(c for c in user_comps if c.id == selected_comp_id)
+    members = sorted(
+        [u for u in selected_comp.members if not u.is_admin],
+        key=lambda u: u.username.lower(),
+    )
+    member_ids = {u.id for u in members}
+
+    user1_id = request.args.get("user1", type=int)
+    user2_id = request.args.get("user2", type=int)
+    user1 = db.session.get(User, user1_id) if user1_id and user1_id in member_ids else None
+    user2 = db.session.get(User, user2_id) if user2_id and user2_id in member_ids else None
+
+    comparison = None
+    if user1 and user2 and user1.id != user2.id:
+        all_matches_h2h = Match.query.order_by(Match.match_date).all()
+        u1_classic = {p.match_id: p for p in Prediction.query.filter_by(user_id=user1.id, competition_id=selected_comp_id)}
+        u2_classic = {p.match_id: p for p in Prediction.query.filter_by(user_id=user2.id, competition_id=selected_comp_id)}
+        u1_odds = {p.match_id: p for p in OddsPrediction.query.filter_by(user_id=user1.id, competition_id=selected_comp_id)}
+        u2_odds = {p.match_id: p for p in OddsPrediction.query.filter_by(user_id=user2.id, competition_id=selected_comp_id)}
+        comparison = {
+            "matches": all_matches_h2h,
+            "u1_classic": u1_classic,
+            "u2_classic": u2_classic,
+            "u1_odds": u1_odds,
+            "u2_odds": u2_odds,
+            "u1_t1": _t1_points_for_competition(user1, selected_comp_id),
+            "u2_t1": _t1_points_for_competition(user2, selected_comp_id),
+            "u1_t2": _t2_points_for_competition(user1, selected_comp_id),
+            "u2_t2": _t2_points_for_competition(user2, selected_comp_id),
+        }
+
+    group_tabs = [{"value": str(c.id), "label": c.name} for c in user_comps] if len(user_comps) > 1 else []
+
+    return render_template(
+        "h2h.html",
+        members=members,
+        user1=user1,
+        user2=user2,
+        comparison=comparison,
+        selected_comp=selected_comp,
+        selected_comp_id=str(selected_comp_id),
+        group_tabs=group_tabs,
+        include_t1=bool(selected_comp.include_tournament1),
+        include_t2=bool(selected_comp.include_tournament2),
+    )
+
+
+# ---------------------------
 # Rules
 # ---------------------------
 @bp.route("/rules")
@@ -730,6 +818,8 @@ def leaderboard():
 
         classic_users = sorted(users, key=lambda u: t1_points[u.id], reverse=True)
         odds_users = sorted(users, key=lambda u: t2_points[u.id], reverse=True)
+        t1_ranks = _assign_ranks(classic_users, t1_points)
+        t2_ranks = _assign_ranks(odds_users, t2_points)
         return render_template(
             "leaderboard.html",
             classic_users=classic_users,
@@ -741,6 +831,10 @@ def leaderboard():
             selected_group=selected_group,
             show_tournament1=show_t1,
             show_tournament2=show_t2,
+            t1_ranks=t1_ranks,
+            t2_ranks=t2_ranks,
+            show_compare=False,
+            compare_comp_id=None,
         )
 
     # Non-admin path
@@ -773,6 +867,9 @@ def leaderboard():
         group_tabs = []
         selected_group = "all"
 
+    t1_ranks = _assign_ranks(classic_users, t1_points)
+    t2_ranks = _assign_ranks(odds_users, t2_points)
+
     return render_template(
         "leaderboard.html",
         classic_users=classic_users,
@@ -784,6 +881,10 @@ def leaderboard():
         selected_group=selected_group,
         show_tournament1=show_t1,
         show_tournament2=show_t2,
+        t1_ranks=t1_ranks,
+        t2_ranks=t2_ranks,
+        show_compare=True,
+        compare_comp_id=selected_comp_id,
     )
 
 
@@ -1036,12 +1137,30 @@ def admin_results():
             outcome.runner_up_team = (request.form.get("outcome_runner_up") or "").strip() or None
             outcome.third_place_team = (request.form.get("outcome_third") or "").strip() or None
 
+        audit_snapshot = {
+            u.id: (u.username, u.total_points)
+            for u in User.query.filter_by(is_admin=False).all()
+        }
         db.session.commit()
         update_all_points()
-        flash("Results saved and user points recalculated!", "success")
+        db.session.expire_all()
+        gainers = []
+        for uid, (uname, old_pts) in audit_snapshot.items():
+            u = db.session.get(User, uid)
+            if u:
+                gained = u.total_points - old_pts
+                if gained > 0:
+                    gainers.append((uname, gained))
+        gainers.sort(key=lambda x: x[1], reverse=True)
+        if gainers:
+            summary = ", ".join(f"{name} +{pts}" for name, pts in gainers[:6])
+            flash(f"Points updated! Top gainers: {summary}", "info")
+        else:
+            flash("Results saved. No new points this round.", "success")
         return redirect(url_for("main.admin_results", admin_tab=admin_tab))
 
     matches = Match.query.order_by(Match.match_date).all()
+    unfinished_count = sum(1 for m in matches if not m.is_finished())
     group_results = {r.group_name: r for r in GroupResult.query.all()}
     outcome = TournamentOutcome.query.first()
     all_teams = sorted({m.home_team for m in matches}.union({m.away_team for m in matches}))
@@ -1053,4 +1172,5 @@ def admin_results():
         outcome=outcome,
         all_teams=all_teams,
         admin_tab=admin_tab,
+        unfinished_count=unfinished_count,
     )

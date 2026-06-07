@@ -1046,3 +1046,205 @@ button:hover {
 .admin-pred-table tr.own-pred-row td {
     background-color: #e8f4fd;
 }
+
+/* ===========================
+   Prediction Progress Bar
+   =========================== */
+.pred-progress-wrap {
+    margin: 10px 0 16px;
+    padding: 10px 14px;
+    background: #f4f8fc;
+    border: 1px solid #d7e4f0;
+    border-radius: 8px;
+}
+
+.pred-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.pred-progress-label {
+    font-size: 13px;
+    color: #1e3a52;
+    font-weight: 600;
+    min-width: 220px;
+    white-space: nowrap;
+}
+
+.pred-progress-track {
+    flex: 1;
+    height: 8px;
+    background: #d8e6f4;
+    border-radius: 999px;
+    overflow: hidden;
+    max-width: 300px;
+}
+
+.pred-progress-bar {
+    height: 100%;
+    background: #0b5ed7;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.pred-progress-hint {
+    font-size: 12px;
+    color: #6b8097;
+    margin: 4px 0 0;
+}
+
+/* ===========================
+   Head-to-Head Page
+   =========================== */
+.h2h-select-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 14px 0;
+    padding: 12px 16px;
+    background: #f4f8fc;
+    border: 1px solid #d7e4f0;
+    border-radius: 8px;
+}
+
+.h2h-select-form select {
+    padding: 7px 10px;
+    border: 1px solid #b8c3d1;
+    border-radius: 4px;
+    min-width: 160px;
+}
+
+.h2h-select-form button {
+    width: auto;
+    padding: 7px 18px;
+    background: #0b5ed7;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.h2h-title {
+    margin: 14px 0 6px;
+    font-size: 20px;
+    color: #13314f;
+}
+
+.h2h-section {
+    margin-top: 20px;
+    border: 1px solid #d7dde5;
+    border-radius: 10px;
+    padding: 14px;
+    background: #fbfdff;
+}
+
+.h2h-section h4 {
+    margin-top: 0;
+    color: #1f4e79;
+}
+
+.h2h-table {
+    min-width: 700px;
+}
+
+.h2h-pred {
+    text-align: center;
+    min-width: 120px;
+}
+
+.h2h-win {
+    background-color: #eefaf0 !important;
+    color: #1a6e30;
+    font-weight: 600;
+}
+
+.h2h-totals {
+    margin: 10px 0 0;
+    font-size: 14px;
+    color: #1e3a52;
+}
+
+.compare-link {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 12px;
+    color: #0b5ed7;
+    text-decoration: none;
+    padding: 2px 8px;
+    border: 1px solid #b8d0f0;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.compare-link:hover {
+    background: #e8f0fc;
+}
+
+/* ===========================
+   Pending notice (admin results)
+   =========================== */
+.pending-notice {
+    color: #b85800;
+    font-weight: 600;
+}
+
+/* ===========================
+   Mobile Responsive
+   =========================== */
+@media (max-width: 768px) {
+    nav ul {
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        padding: 6px 10px;
+    }
+    nav ul li {
+        margin: 2px 6px;
+    }
+    main {
+        padding: 0 10px;
+        margin: 16px auto;
+    }
+    .matches-table {
+        font-size: 13px;
+        min-width: 700px;
+    }
+    .matches-table th, .matches-table td {
+        padding: 8px 8px;
+    }
+    .col-prediction {
+        min-width: 220px;
+    }
+    .leaderboard-grid {
+        flex-direction: column;
+    }
+    .group-grid {
+        grid-template-columns: 1fr;
+    }
+    .pred-progress-label {
+        min-width: 160px;
+    }
+    .h2h-select-form {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    nav ul li.brand {
+        font-size: 15px;
+    }
+    .date-tabs, .competition-tabs {
+        flex-wrap: wrap;
+    }
+    .matches-table {
+        font-size: 12px;
+        min-width: 550px;
+    }
+    h2 {
+        font-size: 20px;
+    }
+}

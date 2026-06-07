@@ -23,11 +23,16 @@
     <section class="admin-results-section">
         <h3>Match Results &amp; Details</h3>
         <p class="meta-line">Edit team names, dates, scores, and stage info. Leave score blank if not yet played.</p>
+        {% if unfinished_count > 0 %}
+            <p class="meta-line pending-notice">{{ unfinished_count }} match{{ "es" if unfinished_count != 1 else "" }} still need scores.</p>
+        {% else %}
+            <p class="meta-line">All matches have scores entered.</p>
+        {% endif %}
         <div class="matches-table-wrap">
             <table class="matches-table admin-results-table">
                 <thead>
                     <tr>
-                        <th>Date / Time</th>
+                        <th>Date / Time (UTC)</th>
                         <th>Home Team</th>
                         <th>Away Team</th>
                         <th>Stage</th>

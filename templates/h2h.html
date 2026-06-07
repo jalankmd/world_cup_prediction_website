@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Head-to-Head</h2>
+
+{% if group_tabs %}
+    <div class="date-tabs" role="tablist" aria-label="Switch group">
+        {% for tab in group_tabs %}
+            <a href="{{ url_for('main.h2h', group=tab.value) }}"
+               class="date-tab {% if selected_comp_id == tab.value %}active{% endif %}">{{ tab.label }}</a>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<p class="meta-line">Group: <strong>{{ selected_comp.name }}</strong></p>
+
+<form method="GET" action="{{ url_for('main.h2h') }}" class="h2h-select-form">
+    <input type="hidden" name="group" value="{{ selected_comp_id }}">
+    <label>Compare</label>
+    <select name="user1" required>
+        <option value="">Select player 1</option>
+        {% for m in members %}
+            <option value="{{ m.id }}" {% if user1 and user1.id == m.id %}selected{% endif %}>{{ m.username }}</option>
+        {% endfor %}
+    </select>
+    <label>vs</label>
+    <select name="user2" required>
+        <option value="">Select player 2</option>
+        {% for m in members %}
+            <option value="{{ m.id }}" {% if user2 and user2.id == m.id %}selected{% endif %}>{{ m.username }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Compare</button>
+</form>
+
+{% if user1 and user2 %}
+    <h3 class="h2h-title">{{ user1.username }} vs {{ user2.username }}</h3>
+
+    {% if comparison %}
+
+        {% if include_t1 %}
+        <section class="h2h-section">
+            <h4>Competition 1 — Score Predictions</h4>
+            <div class="matches-table-wrap">
+                <table class="matches-table h2h-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Match</th>
+                            <th>{{ user1.username }}</th>
+                            <th>{{ user2.username }}</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in comparison.matches %}
+                            {% set p1 = comparison.u1_classic.get(match.id) %}
+                            {% set p2 = comparison.u2_classic.get(match.id) %}
+                            {% if p1 or p2 %}
+                            <tr class="match-row {% if match.is_finished() %}finished{% elif match.is_locked() %}locked{% else %}open{% endif %}">
+                                <td class="col-kickoff">{{ match.match_date | to_et }}</td>
+                                <td>{{ match.home_team }} vs {{ match.away_team }}</td>
+                                <td class="h2h-pred {% if p1 and match.is_finished() %}{% if p1.points > 0 %}h2h-win{% endif %}{% endif %}">
+                                    {% if p1 %}{{ p1.predicted_home_score }}–{{ p1.predicted_away_score }}
+                                        {% if match.is_finished() %}<span class="pred-pts">({{ p1.points }}pts)</span>{% endif %}
+                                    {% else %}<span class="pred-empty">—</span>{% endif %}
+                                </td>
+                                <td class="h2h-pred {% if p2 and match.is_finished() %}{% if p2.points > 0 %}h2h-win{% endif %}{% endif %}">
+                                    {% if p2 %}{{ p2.predicted_home_score }}–{{ p2.predicted_away_score }}
+                                        {% if match.is_finished() %}<span class="pred-pts">({{ p2.points }}pts)</span>{% endif %}
+                                    {% else %}<span class="pred-empty">—</span>{% endif %}
+                                </td>
+                                <td>
+                                    {% if match.is_finished() %}{{ match.home_score }}–{{ match.away_score }}
+                                    {% else %}—{% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="h2h-totals">
+                <strong>Total T1 points:</strong>
+                {{ user1.username }}: <strong>{{ comparison.u1_t1 }}</strong> &nbsp;|&nbsp;
+                {{ user2.username }}: <strong>{{ comparison.u2_t1 }}</strong>
+                {% if comparison.u1_t1 > comparison.u2_t1 %}&nbsp; → {{ user1.username }} leads
+                {% elif comparison.u2_t1 > comparison.u1_t1 %}&nbsp; → {{ user2.username }} leads
+                {% else %}&nbsp; → Tied{% endif %}
+            </p>
+        </section>
+        {% endif %}
+
+        {% if include_t2 %}
+        <section class="h2h-section">
+            <h4>Competition 2 — Odds Predictions</h4>
+            <div class="matches-table-wrap">
+                <table class="matches-table h2h-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Match</th>
+                            <th>{{ user1.username }}</th>
+                            <th>{{ user2.username }}</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in comparison.matches %}
+                            {% set p1 = comparison.u1_odds.get(match.id) %}
+                            {% set p2 = comparison.u2_odds.get(match.id) %}
+                            {% if p1 or p2 %}
+                            <tr class="match-row {% if match.is_finished() %}finished{% elif match.is_locked() %}locked{% else %}open{% endif %}">
+                                <td class="col-kickoff">{{ match.match_date | to_et }}</td>
+                                <td>{{ match.home_team }} vs {{ match.away_team }}</td>
+                                <td class="h2h-pred {% if p1 and match.is_finished() %}{% if p1.points > 0 %}h2h-win{% endif %}{% endif %}">
+                                    {% if p1 %}
+                                        {% if p1.predicted_outcome == 'home' %}{{ match.home_team }}
+                                        {% elif p1.predicted_outcome == 'away' %}{{ match.away_team }}
+                                        {% else %}Draw{% endif %}
+                                        {% if match.is_finished() %}<span class="pred-pts">({{ "%.2f"|format(p1.points) }})</span>{% endif %}
+                                    {% else %}<span class="pred-empty">—</span>{% endif %}
+                                </td>
+                                <td class="h2h-pred {% if p2 and match.is_finished() %}{% if p2.points > 0 %}h2h-win{% endif %}{% endif %}">
+                                    {% if p2 %}
+                                        {% if p2.predicted_outcome == 'home' %}{{ match.home_team }}
+                                        {% elif p2.predicted_outcome == 'away' %}{{ match.away_team }}
+                                        {% else %}Draw{% endif %}
+                                        {% if match.is_finished() %}<span class="pred-pts">({{ "%.2f"|format(p2.points) }})</span>{% endif %}
+                                    {% else %}<span class="pred-empty">—</span>{% endif %}
+                                </td>
+                                <td>
+                                    {% if match.is_finished() %}{{ match.home_score }}–{{ match.away_score }}
+                                    {% else %}—{% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="h2h-totals">
+                <strong>Total T2 points:</strong>
+                {{ user1.username }}: <strong>{{ comparison.u1_t2 }}</strong> &nbsp;|&nbsp;
+                {{ user2.username }}: <strong>{{ comparison.u2_t2 }}</strong>
+                {% if comparison.u1_t2 > comparison.u2_t2 %}&nbsp; → {{ user1.username }} leads
+                {% elif comparison.u2_t2 > comparison.u1_t2 %}&nbsp; → {{ user2.username }} leads
+                {% else %}&nbsp; → Tied{% endif %}
+            </p>
+        </section>
+        {% endif %}
+
+    {% else %}
+        <p class="meta-line">No predictions submitted yet to compare.</p>
+    {% endif %}
+
+{% elif user1 or user2 %}
+    <p class="meta-line">Please select two different players to compare.</p>
+{% endif %}
+{% endblock %}

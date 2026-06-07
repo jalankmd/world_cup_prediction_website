@@ -48,6 +48,31 @@
     {% endfor %}
 </div>
 
+<div class="pred-progress-wrap">
+    {% if competition == 'classic' %}
+        <div class="pred-progress-row">
+            <span class="pred-progress-label">Score predictions: {{ classic_pred_count }}/{{ total_match_count }}</span>
+            <div class="pred-progress-track">
+                <div class="pred-progress-bar" style="width: {{ (classic_pred_count / total_match_count * 100) | int if total_match_count else 0 }}%"></div>
+            </div>
+        </div>
+        <div class="pred-progress-row">
+            <span class="pred-progress-label">Group qualifier picks: {{ qualifier_pred_count }}/12</span>
+            <div class="pred-progress-track">
+                <div class="pred-progress-bar" style="width: {{ (qualifier_pred_count / 12 * 100) | int }}%"></div>
+            </div>
+        </div>
+    {% else %}
+        <div class="pred-progress-row">
+            <span class="pred-progress-label">Odds predictions: {{ odds_pred_count }}/{{ total_match_count }}</span>
+            <div class="pred-progress-track">
+                <div class="pred-progress-bar" style="width: {{ (odds_pred_count / total_match_count * 100) | int if total_match_count else 0 }}%"></div>
+            </div>
+        </div>
+    {% endif %}
+    <p class="pred-progress-hint">You can edit predictions any time before kickoff (Eastern Time).</p>
+</div>
+
 {% if competition == 'classic' %}
     <div class="matches-table-wrap">
         <table class="matches-table">
@@ -73,7 +98,7 @@
                     {% set pred = predictions.get(match.id) %}
 
                     <tr class="match-row {{ status }}">
-                        <td class="col-kickoff">{{ match.match_date.strftime("%Y-%m-%d %H:%M") if match.match_date else "TBD" }}</td>
+                        <td class="col-kickoff">{{ match.match_date | to_et }}</td>
                         <td>
                             <span class="team-with-flag">
                                 {% if team_flag_codes.get(match.home_team) %}
@@ -170,7 +195,7 @@
                         <p class="meta-line">Qualified: {{ card.result.qualified_team_1 }}, {{ card.result.qualified_team_2 }}</p>
                     {% endif %}
                     {% if card.deadline and not card.locked %}
-                        <p class="meta-line">Locks: {{ card.deadline.strftime('%d %b %Y %H:%M') }} UTC</p>
+                        <p class="meta-line">Locks: {{ card.deadline | to_et }}</p>
                     {% endif %}
                 </div>
             {% endfor %}
@@ -184,7 +209,7 @@
         {% if podium_locked %}
             <span class="podium-locked-notice">Picks are locked — the tournament has begun.</span>
         {% elif podium_deadline %}
-            <span class="podium-deadline-notice">Open until {{ podium_deadline.strftime('%d %b %Y %H:%M') }} UTC</span>
+            <span class="podium-deadline-notice">Open until {{ podium_deadline | to_et }}</span>
         {% endif %}
 
         <form class="podium-form" method="POST" action="{{ url_for('main.predict_podium') }}">
@@ -251,7 +276,7 @@
                     {% set pred = odds_predictions.get(match.id) %}
 
                     <tr class="match-row {{ status }}">
-                        <td class="col-kickoff">{{ match.match_date.strftime("%Y-%m-%d %H:%M") if match.match_date else "TBD" }}</td>
+                        <td class="col-kickoff">{{ match.match_date | to_et }}</td>
                         <td>{{ match.home_team }}</td>
                         <td>{{ match.away_team }}</td>
                         <td>{{ status|capitalize }}</td>

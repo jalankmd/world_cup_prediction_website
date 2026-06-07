@@ -6,6 +6,7 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # Load environment variables
 load_dotenv()
@@ -17,6 +18,9 @@ migrate = Migrate()
 csrf = CSRFProtect()
 
 login_manager.login_view = "main.login"
+
+# World Cup 2026 runs June–July, entirely during EDT (UTC-4)
+_EDT_OFFSET = timedelta(hours=-4)
 
 def create_app(config_class=None):
     """Flask app factory"""
@@ -51,5 +55,15 @@ def create_app(config_class=None):
     # Register blueprints
     from app.routes import bp as main_bp
     app.register_blueprint(main_bp)
+
+    @app.template_filter('to_et')
+    def to_et_filter(dt):
+        """Convert a naive UTC datetime to Eastern Time (EDT, UTC-4) string."""
+        if dt is None:
+            return "TBD"
+        et = dt + _EDT_OFFSET
+        hour = et.hour % 12 or 12
+        ampm = "AM" if et.hour < 12 else "PM"
+        return f"{et.strftime('%b %d')} {hour}:{et.strftime('%M')} {ampm} ET"
 
     return app

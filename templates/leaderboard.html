@@ -33,8 +33,17 @@
                 <tbody>
                     {% for user in classic_users %}
                         <tr>
-                            <td>{{ loop.index }}</td>
-                            <td>{{ user.username }}</td>
+                            <td class="rank-cell">
+                                {% if loop.index == 1 and t1_ranks[user.id] == 1 %}🥇
+                                {% elif t1_ranks[user.id] == 2 %}🥈
+                                {% elif t1_ranks[user.id] == 3 %}🥉
+                                {% else %}{{ t1_ranks[user.id] }}{% endif %}
+                            </td>
+                            <td>{{ user.username }}
+                                {% if show_compare and user.id != current_user.id %}
+                                    <a href="{{ url_for('main.h2h', user1=current_user.id, user2=user.id, group=compare_comp_id) }}" class="compare-link">Compare</a>
+                                {% endif %}
+                            </td>
                             <td>{{ t1_points[user.id] }}</td>
                         </tr>
                     {% endfor %}
@@ -57,8 +66,17 @@
                 <tbody>
                     {% for user in odds_users %}
                         <tr>
-                            <td>{{ loop.index }}</td>
-                            <td>{{ user.username }}</td>
+                            <td class="rank-cell">
+                                {% if loop.index == 1 and t2_ranks[user.id] == 1 %}🥇
+                                {% elif t2_ranks[user.id] == 2 %}🥈
+                                {% elif t2_ranks[user.id] == 3 %}🥉
+                                {% else %}{{ t2_ranks[user.id] }}{% endif %}
+                            </td>
+                            <td>{{ user.username }}
+                                {% if show_compare and user.id != current_user.id %}
+                                    <a href="{{ url_for('main.h2h', user1=current_user.id, user2=user.id, group=compare_comp_id) }}" class="compare-link">Compare</a>
+                                {% endif %}
+                            </td>
                             <td>{{ t2_points[user.id] }}</td>
                         </tr>
                     {% endfor %}
