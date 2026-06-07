@@ -172,3 +172,102 @@ with app.app_context():
 
     from scripts.create_admin_account import create_admin
     create_admin()
+
+    # ── Fix all group-stage kickoff times (UTC) ────────────────────────────────
+    # All times converted from official ET schedule (EDT = UTC-4).
+    # Idempotent: safe to run on every deploy.
+    match_times = [
+        # Group A
+        ("Mexico",                  "South Africa",      "2026-06-11 19:00:00"),
+        ("South Korea",             "Czech Republic",    "2026-06-12 02:00:00"),
+        ("Czech Republic",          "South Africa",      "2026-06-18 16:00:00"),
+        ("Mexico",                  "South Korea",       "2026-06-19 01:00:00"),
+        ("Czech Republic",          "Mexico",            "2026-06-25 01:00:00"),
+        ("South Africa",            "South Korea",       "2026-06-25 01:00:00"),
+        # Group B
+        ("Canada",                  "Bosnia and Herzegovina", "2026-06-12 19:00:00"),
+        ("Qatar",                   "Switzerland",       "2026-06-13 19:00:00"),
+        ("Switzerland",             "Bosnia and Herzegovina", "2026-06-18 19:00:00"),
+        ("Canada",                  "Qatar",             "2026-06-18 22:00:00"),
+        ("Switzerland",             "Canada",            "2026-06-24 19:00:00"),
+        ("Bosnia and Herzegovina",  "Qatar",             "2026-06-24 19:00:00"),
+        # Group C
+        ("USA",                     "Paraguay",          "2026-06-13 01:00:00"),
+        ("Australia",               "Turkey",            "2026-06-14 04:00:00"),
+        ("USA",                     "Australia",         "2026-06-19 19:00:00"),
+        ("Turkey",                  "Paraguay",          "2026-06-20 04:00:00"),
+        ("Turkey",                  "USA",               "2026-06-25 17:00:00"),
+        ("Paraguay",                "Australia",         "2026-06-25 17:00:00"),
+        # Group D
+        ("Brazil",                  "Morocco",           "2026-06-13 22:00:00"),
+        ("Haiti",                   "Scotland",          "2026-06-14 01:00:00"),
+        ("Scotland",                "Morocco",           "2026-06-19 22:00:00"),
+        ("Brazil",                  "Haiti",             "2026-06-20 01:00:00"),
+        ("Brazil",                  "Scotland",          "2026-06-24 22:00:00"),
+        ("Morocco",                 "Haiti",             "2026-06-24 22:00:00"),
+        # Group E
+        ("Germany",                 "Curaçao",           "2026-06-14 17:00:00"),
+        ("Ivory Coast",             "Ecuador",           "2026-06-14 23:00:00"),
+        ("Germany",                 "Ivory Coast",       "2026-06-20 20:00:00"),
+        ("Ecuador",                 "Curaçao",           "2026-06-21 00:00:00"),
+        ("Ecuador",                 "Germany",           "2026-06-25 20:00:00"),
+        ("Curaçao",                 "Ivory Coast",       "2026-06-25 20:00:00"),
+        # Group F
+        ("Netherlands",             "Japan",             "2026-06-14 20:00:00"),
+        ("Sweden",                  "Tunisia",           "2026-06-15 02:00:00"),
+        ("Netherlands",             "Sweden",            "2026-06-20 17:00:00"),
+        ("Tunisia",                 "Japan",             "2026-06-21 04:00:00"),
+        ("Japan",                   "Sweden",            "2026-06-25 23:00:00"),
+        ("Tunisia",                 "Netherlands",       "2026-06-25 23:00:00"),
+        # Group G
+        ("Spain",                   "Cape Verde",        "2026-06-15 16:00:00"),
+        ("Belgium",                 "Egypt",             "2026-06-15 19:00:00"),
+        ("Spain",                   "Belgium",           "2026-06-21 16:00:00"),
+        ("Cape Verde",              "Egypt",             "2026-06-21 19:00:00"),
+        ("Uruguay",                 "Cape Verde",        "2026-06-21 22:00:00"),
+        ("New Zealand",             "Egypt",             "2026-06-22 01:00:00"),
+        ("Cape Verde",              "Saudi Arabia",      "2026-06-27 00:00:00"),
+        ("Uruguay",                 "Spain",             "2026-06-27 00:00:00"),
+        ("Egypt",                   "Iran",              "2026-06-27 03:00:00"),
+        ("New Zealand",             "Belgium",           "2026-06-27 03:00:00"),
+        # Group H
+        ("Saudi Arabia",            "Uruguay",           "2026-06-15 22:00:00"),
+        ("Iran",                    "New Zealand",       "2026-06-16 01:00:00"),
+        ("Spain",                   "Saudi Arabia",      "2026-06-21 16:00:00"),
+        ("Belgium",                 "Iran",              "2026-06-21 19:00:00"),
+        # Group I
+        ("France",                  "Senegal",           "2026-06-16 19:00:00"),
+        ("Iraq",                    "Norway",            "2026-06-16 22:00:00"),
+        ("France",                  "Iraq",              "2026-06-22 21:00:00"),
+        ("Norway",                  "Senegal",           "2026-06-23 00:00:00"),
+        ("Norway",                  "France",            "2026-06-26 19:00:00"),
+        ("Senegal",                 "Iraq",              "2026-06-26 19:00:00"),
+        # Group J
+        ("Argentina",               "Algeria",           "2026-06-17 01:00:00"),
+        ("Austria",                 "Jordan",            "2026-06-17 04:00:00"),
+        ("Argentina",               "Austria",           "2026-06-22 17:00:00"),
+        ("Jordan",                  "Algeria",           "2026-06-23 03:00:00"),
+        ("Algeria",                 "Austria",           "2026-06-28 02:00:00"),
+        ("Jordan",                  "Argentina",         "2026-06-28 02:00:00"),
+        # Group K
+        ("England",                 "Croatia",           "2026-06-17 20:00:00"),
+        ("Ghana",                   "Panama",            "2026-06-17 23:00:00"),
+        ("England",                 "Ghana",             "2026-06-23 20:00:00"),
+        ("Panama",                  "Croatia",           "2026-06-23 23:00:00"),
+        ("Panama",                  "England",           "2026-06-27 21:00:00"),
+        ("Croatia",                 "Ghana",             "2026-06-27 21:00:00"),
+        # Group L
+        ("Portugal",                "Uzbekistan",        "2026-06-17 17:00:00"),
+        ("Uzbekistan",              "Colombia",          "2026-06-18 02:00:00"),
+        ("Colombia",                "DR Congo",          "2026-06-24 02:00:00"),
+        ("Colombia",                "Portugal",          "2026-06-27 23:30:00"),
+        ("DR Congo",                "Uzbekistan",        "2026-06-27 23:30:00"),
+    ]
+    for home, away, utc_str in match_times:
+        try:
+            db.session.execute(db.text(
+                "UPDATE matches SET match_date = :dt WHERE home_team = :home AND away_team = :away"
+            ), {"dt": utc_str, "home": home, "away": away})
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
