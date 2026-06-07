@@ -1,12 +1,6 @@
 # app/routes.py
 """
 Main route handlers for the World Cup Prediction Website.
-
-This file defines all the Flask routes using a blueprint (`bp`).
-- User authentication (register, login, logout)
-- Match display and prediction submission
-- Leaderboard
-- Admin dashboard
 """
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
@@ -21,16 +15,19 @@ from app.models import (
     GroupResult,
     PodiumPrediction,
     TournamentOutcome,
+    user_competitions,
 )
-from app.forms import RegisterForm, LoginForm, PredictionForm
+from app.forms import RegisterForm, LoginForm, PredictionForm, JoinCompetitionForm
 from app.scoring import update_all_points
 from app import db
 from datetime import datetime, timezone
 
-# ---------------------------
-# Blueprint Setup
-# ---------------------------
 bp = Blueprint("main", __name__)
+
+# Sign-up closes Thursday June 11, 2026 at 11:59 PM Eastern (EDT = UTC-4)
+# 11:59 PM EDT = 03:59 UTC on June 12
+SIGNUP_DEADLINE_UTC = datetime(2026, 6, 12, 3, 59, 0)
+SIGNUP_DEADLINE_DISPLAY = "Thursday, June 11 at 11:59 PM Eastern Time"
 
 TEAM_FLAG_CODES = {
     "Algeria": "dz",
@@ -109,7 +106,6 @@ TEAM_TO_GROUP = {
 
 
 def _group_deadline(group_name):
-    """Return first kickoff datetime for a group to lock qualifying picks."""
     teams = GROUP_TEAMS.get(group_name, [])
     first_match = (
         Match.query.filter(
@@ -123,27 +119,50 @@ def _group_deadline(group_name):
 
 
 def _podium_deadline():
-    """Podium picks lock after the first match of the tournament starts."""
     first_match = Match.query.filter(Match.match_date.isnot(None)).order_by(Match.match_date.asc()).first()
     return first_match.match_date if first_match else None
 
 
 def _utc_now_naive():
-    """Return current UTC datetime as naive value to match stored DB datetimes."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def _allowed_competitions_for_user(user):
-    """Return tuple (group_obj_or_none, allow_comp1, allow_comp2) for current user."""
+def _allowed_competitions_for_user(user, competition_id=None):
+    """Return (group, allow_comp1, allow_comp2) for the given competition context.
+
+    If competition_id is provided, verify the user is a member and use that group.
+    Otherwise fall back to the user's primary (registration) group.
+    """
     if getattr(user, "is_admin", False):
         return None, True, True
 
-    group = user.group
-    if not group:
+    target_group = None
+    if competition_id:
+        for comp in user.competitions:
+            if comp.id == competition_id:
+                target_group = comp
+                break
+
+    if not target_group:
+        target_group = user.group  # FK-based primary group
+
+    if not target_group:
         return None, False, False
 
-    return group, bool(group.include_tournament1), bool(group.include_tournament2)
+    return target_group, bool(target_group.include_tournament1), bool(target_group.include_tournament2)
 
+
+def _t1_points_for_competition(user, competition_id):
+    """Sum Tournament 1 points for a user scoped to a specific competition."""
+    classic = sum(p.points for p in user.predictions if p.competition_id == competition_id)
+    group_q = sum(p.points for p in user.group_qualifier_predictions if p.competition_id == competition_id)
+    podium = PodiumPrediction.query.filter_by(user_id=user.id, competition_id=competition_id).first()
+    return classic + group_q + (podium.points if podium else 0)
+
+
+def _t2_points_for_competition(user, competition_id):
+    """Sum Tournament 2 points for a user scoped to a specific competition."""
+    return int(round(sum(p.points for p in user.odds_predictions if p.competition_id == competition_id)))
 
 
 # ---------------------------
@@ -151,8 +170,12 @@ def _allowed_competitions_for_user(user):
 # ---------------------------
 @bp.route("/")
 def home():
-    """Render the homepage."""
-    return render_template("home.html")
+    signup_open = _utc_now_naive() < SIGNUP_DEADLINE_UTC
+    return render_template(
+        "home.html",
+        signup_open=signup_open,
+        signup_deadline_display=SIGNUP_DEADLINE_DISPLAY,
+    )
 
 
 # ---------------------------
@@ -160,18 +183,15 @@ def home():
 # ---------------------------
 @bp.route("/register", methods=["GET", "POST"])
 def register():
-    """
-    Register a new user.
-    - Validates form
-    - Hashes password
-    - Stores user in DB
-    """
+    if _utc_now_naive() >= SIGNUP_DEADLINE_UTC:
+        return render_template("register.html", signup_closed=True, form=None)
+
     form = RegisterForm()
     if form.validate_on_submit():
         group = Competition.query.filter_by(code=form.group_code.data.strip()).first()
         if not group:
             flash("Invalid group code.", "danger")
-            return render_template("register.html", form=form)
+            return render_template("register.html", form=form, signup_closed=False)
 
         user = User(
             first_name=form.first_name.data,
@@ -181,13 +201,47 @@ def register():
             email_verified=True,
         )
         user.set_password(form.password.data)
+        user.competitions.append(group)
         db.session.add(user)
         db.session.commit()
 
         flash("Account created! You can now log in.", "success")
         return redirect(url_for("main.login"))
 
-    return render_template("register.html", form=form)
+    return render_template("register.html", form=form, signup_closed=False)
+
+
+# ---------------------------
+# Join Another Competition
+# ---------------------------
+@bp.route("/join", methods=["GET", "POST"])
+@login_required
+def join_competition():
+    if current_user.is_admin:
+        flash("Admins cannot join competitions.", "info")
+        return redirect(url_for("main.home"))
+
+    if _utc_now_naive() >= SIGNUP_DEADLINE_UTC:
+        flash("Sign-up is now closed. Please contact the site owner to join.", "warning")
+        return redirect(url_for("main.home"))
+
+    form = JoinCompetitionForm()
+    if form.validate_on_submit():
+        group = Competition.query.filter_by(code=form.group_code.data.strip()).first()
+        if not group:
+            flash("Invalid group code.", "danger")
+            return render_template("join_competition.html", form=form)
+
+        if any(c.id == group.id for c in current_user.competitions):
+            flash(f"You are already a member of '{group.name}'.", "info")
+            return redirect(url_for("main.matches"))
+
+        current_user.competitions.append(group)
+        db.session.commit()
+        flash(f"Joined '{group.name}'!", "success")
+        return redirect(url_for("main.matches", group_id=group.id))
+
+    return render_template("join_competition.html", form=form)
 
 
 # ---------------------------
@@ -195,11 +249,6 @@ def register():
 # ---------------------------
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    Login an existing user.
-    - Validates credentials
-    - Uses Flask-Login to create session
-    """
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
@@ -218,11 +267,9 @@ def login():
 @bp.route("/logout")
 @login_required
 def logout():
-    """Logout the current user."""
     logout_user()
     flash("You have been logged out.", "info")
     return redirect(url_for("main.login"))
-
 
 
 # ---------------------------
@@ -231,19 +278,20 @@ def logout():
 @bp.route("/matches")
 @login_required
 def matches():
-    """
-    Display all matches and current user's predictions.
-    - Predictions are mapped by match_id for easy lookup in template.
-    """
     if current_user.is_admin:
         flash("Admins use the Results Entry page to enter outcomes.", "info")
         return redirect(url_for("main.admin_results", admin_tab="classic"))
 
     all_matches = Match.query.order_by(Match.match_date).all()
-    user_group, allow_comp1, allow_comp2 = _allowed_competitions_for_user(current_user)
+
+    # Determine the active competition context
+    group_id = request.args.get("group_id", type=int) or current_user.competition_id
+    user_group, allow_comp1, allow_comp2 = _allowed_competitions_for_user(current_user, group_id)
     if not (allow_comp1 or allow_comp2):
         flash("You are not assigned to a group yet.", "danger")
         return redirect(url_for("main.home"))
+
+    active_group_id = user_group.id
 
     selected_competition = request.args.get("competition", "classic")
     if selected_competition not in {"classic", "odds"}:
@@ -261,21 +309,30 @@ def matches():
     ]
 
     if selected_date == "all":
-        matches = all_matches
+        filtered_matches = all_matches
     else:
         try:
             target_date = datetime.strptime(selected_date, "%Y-%m-%d").date()
-            matches = [m for m in all_matches if m.match_date and m.match_date.date() == target_date]
+            filtered_matches = [m for m in all_matches if m.match_date and m.match_date.date() == target_date]
         except ValueError:
             selected_date = "all"
-            matches = all_matches
+            filtered_matches = all_matches
 
-    predictions = {p.match_id: p for p in Prediction.query.filter_by(user_id=current_user.id)}
-    odds_predictions = {p.match_id: p for p in OddsPrediction.query.filter_by(user_id=current_user.id)}
+    # Load predictions scoped to the active competition
+    predictions = {
+        p.match_id: p
+        for p in Prediction.query.filter_by(user_id=current_user.id, competition_id=active_group_id)
+    }
+    odds_predictions = {
+        p.match_id: p
+        for p in OddsPrediction.query.filter_by(user_id=current_user.id, competition_id=active_group_id)
+    }
 
     group_predictions = {
         p.group_name: p
-        for p in GroupQualifierPrediction.query.filter_by(user_id=current_user.id).all()
+        for p in GroupQualifierPrediction.query.filter_by(
+            user_id=current_user.id, competition_id=active_group_id
+        ).all()
     }
     group_results = {r.group_name: r for r in GroupResult.query.all()}
 
@@ -295,14 +352,18 @@ def matches():
             }
         )
 
-    podium_prediction = PodiumPrediction.query.filter_by(user_id=current_user.id).first()
+    podium_prediction = PodiumPrediction.query.filter_by(
+        user_id=current_user.id, competition_id=active_group_id
+    ).first()
     all_teams = sorted({m.home_team for m in all_matches}.union({m.away_team for m in all_matches}))
     podium_deadline = _podium_deadline()
     podium_locked = bool(podium_deadline and now_utc >= podium_deadline)
 
+    user_all_competitions = list(current_user.competitions)
+
     return render_template(
         "matches.html",
-        matches=matches,
+        matches=filtered_matches,
         predictions=predictions,
         odds_predictions=odds_predictions,
         team_flag_codes=TEAM_FLAG_CODES,
@@ -317,6 +378,8 @@ def matches():
         allow_tournament1=allow_comp1,
         allow_tournament2=allow_comp2,
         user_group=user_group,
+        active_group_id=active_group_id,
+        user_all_competitions=user_all_competitions,
     )
 
 
@@ -326,50 +389,46 @@ def matches():
 @bp.route("/predict_inline/<int:match_id>", methods=["POST"])
 @login_required
 def predict_inline(match_id):
-    """
-    Submit or update a prediction for a match.
-    - Prevents submission if match is locked or finished
-    - Updates or creates prediction in DB
-    """
     match = db.session.get(Match, match_id)
     if match is None:
         abort(404)
     selected_date = request.form.get("selected_date", "all")
     selected_competition = request.form.get("competition", "classic")
-    _, allow_comp1, _ = _allowed_competitions_for_user(current_user)
+    group_id = request.form.get("group_id", type=int) or current_user.competition_id
+
+    _, allow_comp1, _ = _allowed_competitions_for_user(current_user, group_id)
     if not allow_comp1:
         flash("Your group does not include Competition 1.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition="odds"))
+        return redirect(url_for("main.matches", date=selected_date, competition="odds", group_id=group_id))
 
     if match.is_locked() or match.is_finished():
         flash("Match is locked, cannot submit prediction.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
-    prediction = Prediction.query.filter_by(user_id=current_user.id, match_id=match.id).first()
+    prediction = Prediction.query.filter_by(
+        user_id=current_user.id, match_id=match.id, competition_id=group_id
+    ).first()
     try:
         home_score = int(request.form["predicted_home_score"])
         away_score = int(request.form["predicted_away_score"])
     except (KeyError, ValueError):
         flash("Invalid prediction values.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
     if prediction:
-        # Update existing prediction
         prediction.predicted_home_score = home_score
         prediction.predicted_away_score = away_score
         flash("Prediction updated!", "success")
     else:
-        # Create new prediction
-        new_pred = Prediction(
+        db.session.add(Prediction(
             user_id=current_user.id,
             match_id=match.id,
+            competition_id=group_id,
             predicted_home_score=home_score,
-            predicted_away_score=away_score
-        )
-        db.session.add(new_pred)
+            predicted_away_score=away_score,
+        ))
         flash("Prediction saved!", "success")
 
-    # Commit changes
     try:
         db.session.commit()
     except Exception as e:
@@ -377,40 +436,46 @@ def predict_inline(match_id):
         flash("Database error. Please try again.", "danger")
         print(e)
 
-    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
 
 @bp.route("/predict_outcome_inline/<int:match_id>", methods=["POST"])
 @login_required
 def predict_outcome_inline(match_id):
-    """Submit or update Tournament 2 odds prediction for a match outcome."""
     match = db.session.get(Match, match_id)
     if match is None:
         abort(404)
     selected_date = request.form.get("selected_date", "all")
     selected_competition = request.form.get("competition", "odds")
+    group_id = request.form.get("group_id", type=int) or current_user.competition_id
     outcome = (request.form.get("predicted_outcome") or "").lower()
-    _, _, allow_comp2 = _allowed_competitions_for_user(current_user)
+
+    _, _, allow_comp2 = _allowed_competitions_for_user(current_user, group_id)
     if not allow_comp2:
         flash("Your group does not include Competition 2.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition="classic"))
+        return redirect(url_for("main.matches", date=selected_date, competition="classic", group_id=group_id))
 
     if match.is_locked() or match.is_finished():
         flash("Match is locked, cannot submit prediction.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
     if outcome not in {"home", "draw", "away"}:
         flash("Invalid outcome. Choose home, draw or away.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
-    prediction = OddsPrediction.query.filter_by(user_id=current_user.id, match_id=match.id).first()
+    prediction = OddsPrediction.query.filter_by(
+        user_id=current_user.id, match_id=match.id, competition_id=group_id
+    ).first()
     if prediction:
         prediction.predicted_outcome = outcome
         flash("Odds prediction updated!", "success")
     else:
-        db.session.add(
-            OddsPrediction(user_id=current_user.id, match_id=match.id, predicted_outcome=outcome)
-        )
+        db.session.add(OddsPrediction(
+            user_id=current_user.id,
+            match_id=match.id,
+            competition_id=group_id,
+            predicted_outcome=outcome,
+        ))
         flash("Odds prediction saved!", "success")
 
     try:
@@ -420,44 +485,46 @@ def predict_outcome_inline(match_id):
         flash("Database error. Please try again.", "danger")
         print(e)
 
-    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
 
 @bp.route("/predict_group_qualifiers", methods=["POST"])
 @login_required
 def predict_group_qualifiers():
-    """Submit Tournament 1 group qualifier prediction for a group."""
     group_name = (request.form.get("group_name") or "").strip().upper()
     team_1 = (request.form.get("team_1") or "").strip()
     team_2 = (request.form.get("team_2") or "").strip()
     selected_date = request.form.get("selected_date", "all")
     selected_competition = request.form.get("competition", "classic")
-    _, allow_comp1, _ = _allowed_competitions_for_user(current_user)
+    group_id = request.form.get("group_id", type=int) or current_user.competition_id
+
+    _, allow_comp1, _ = _allowed_competitions_for_user(current_user, group_id)
     if not allow_comp1:
         flash("Your group does not include Competition 1.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition="odds"))
+        return redirect(url_for("main.matches", date=selected_date, competition="odds", group_id=group_id))
 
     teams = GROUP_TEAMS.get(group_name)
     if not teams:
         flash("Invalid group selected.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
     if team_1 == team_2:
         flash("Select two different teams for group qualifiers.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
     if team_1 not in teams or team_2 not in teams:
         flash("Selected teams must belong to the chosen group.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
     deadline = _group_deadline(group_name)
     if deadline and _utc_now_naive() >= deadline:
         flash(f"Group {group_name} is locked for qualifier picks.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
     prediction = GroupQualifierPrediction.query.filter_by(
         user_id=current_user.id,
         group_name=group_name,
+        competition_id=group_id,
     ).first()
 
     if prediction:
@@ -465,62 +532,61 @@ def predict_group_qualifiers():
         prediction.team_2 = team_2
         flash(f"Group {group_name} qualifiers updated!", "success")
     else:
-        db.session.add(
-            GroupQualifierPrediction(
-                user_id=current_user.id,
-                group_name=group_name,
-                team_1=team_1,
-                team_2=team_2,
-            )
-        )
+        db.session.add(GroupQualifierPrediction(
+            user_id=current_user.id,
+            group_name=group_name,
+            competition_id=group_id,
+            team_1=team_1,
+            team_2=team_2,
+        ))
         flash(f"Group {group_name} qualifiers saved!", "success")
 
     db.session.commit()
-    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
 
 @bp.route("/predict_podium", methods=["POST"])
 @login_required
 def predict_podium():
-    """Submit Tournament 1 podium prediction (champion, runner-up, third)."""
     champion_team = (request.form.get("champion_team") or "").strip()
     runner_up_team = (request.form.get("runner_up_team") or "").strip()
     third_place_team = (request.form.get("third_place_team") or "").strip()
     selected_date = request.form.get("selected_date", "all")
     selected_competition = request.form.get("competition", "classic")
-    _, allow_comp1, _ = _allowed_competitions_for_user(current_user)
+    group_id = request.form.get("group_id", type=int) or current_user.competition_id
+
+    _, allow_comp1, _ = _allowed_competitions_for_user(current_user, group_id)
     if not allow_comp1:
         flash("Your group does not include Competition 1.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition="odds"))
+        return redirect(url_for("main.matches", date=selected_date, competition="odds", group_id=group_id))
 
     if len({champion_team, runner_up_team, third_place_team}) != 3:
         flash("Champion, runner-up and third place must be different teams.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
     deadline = _podium_deadline()
     if deadline and _utc_now_naive() >= deadline:
         flash("Tournament podium picks are locked after the first game starts.", "danger")
-        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+        return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
-    prediction = PodiumPrediction.query.filter_by(user_id=current_user.id).first()
+    prediction = PodiumPrediction.query.filter_by(user_id=current_user.id, competition_id=group_id).first()
     if prediction:
         prediction.champion_team = champion_team
         prediction.runner_up_team = runner_up_team
         prediction.third_place_team = third_place_team
         flash("Podium picks updated!", "success")
     else:
-        db.session.add(
-            PodiumPrediction(
-                user_id=current_user.id,
-                champion_team=champion_team,
-                runner_up_team=runner_up_team,
-                third_place_team=third_place_team,
-            )
-        )
+        db.session.add(PodiumPrediction(
+            user_id=current_user.id,
+            competition_id=group_id,
+            champion_team=champion_team,
+            runner_up_team=runner_up_team,
+            third_place_team=third_place_team,
+        ))
         flash("Podium picks saved!", "success")
 
     db.session.commit()
-    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition))
+    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
 
 # ---------------------------
@@ -529,23 +595,38 @@ def predict_podium():
 @bp.route("/rules")
 @login_required
 def rules():
-    return render_template("rules.html")
+    competitions_prize_info = []
+    if not current_user.is_admin:
+        for comp in current_user.competitions:
+            if comp.entry_fee and comp.entry_fee > 0:
+                member_count = sum(1 for u in comp.members if not u.is_admin)
+                total = comp.entry_fee * member_count
+                competitions_prize_info.append({
+                    "name": comp.name,
+                    "entry_fee": comp.entry_fee,
+                    "member_count": member_count,
+                    "total_pool": total,
+                    "comp1_winner": total * 0.50,
+                    "comp1_second": total * 0.20,
+                    "comp2_winner": total * 0.30,
+                    "include_tournament1": comp.include_tournament1,
+                    "include_tournament2": comp.include_tournament2,
+                })
+    return render_template("rules.html", competitions_prize_info=competitions_prize_info)
 
 
+# ---------------------------
 # Leaderboard
 # ---------------------------
 @bp.route("/leaderboard")
 @login_required
 def leaderboard():
-    """
-    Display separate leaderboards for each competition.
-    - Admin users are excluded from rankings
-    """
+    """Display leaderboards per competition group."""
     if current_user.is_admin:
         selected_group = request.args.get("group", "all")
         groups = Competition.query.order_by(Competition.name.asc()).all()
         group_tabs = [{"value": "all", "label": "All Groups"}] + [
-            {"value": str(group.id), "label": group.name} for group in groups
+            {"value": str(g.id), "label": g.name} for g in groups
         ]
 
         if selected_group == "all":
@@ -553,44 +634,87 @@ def leaderboard():
             group_label = "All Groups"
             show_t1 = True
             show_t2 = True
+            t1_points = {u.id: u.tournament1_points for u in users}
+            t2_points = {u.id: u.tournament2_points for u in users}
         else:
             if selected_group.isdigit():
                 group_id = int(selected_group)
                 selected_group_obj = db.session.get(Competition, group_id)
                 if selected_group_obj:
-                    users = User.query.filter_by(is_admin=False, competition_id=group_id).all()
+                    users = [u for u in selected_group_obj.members if not u.is_admin]
                     group_label = selected_group_obj.name
                     show_t1 = bool(selected_group_obj.include_tournament1)
                     show_t2 = bool(selected_group_obj.include_tournament2)
+                    t1_points = {u.id: _t1_points_for_competition(u, group_id) for u in users}
+                    t2_points = {u.id: _t2_points_for_competition(u, group_id) for u in users}
                 else:
                     users = User.query.filter_by(is_admin=False).all()
                     group_label = "All Groups"
                     selected_group = "all"
                     show_t1 = True
                     show_t2 = True
+                    t1_points = {u.id: u.tournament1_points for u in users}
+                    t2_points = {u.id: u.tournament2_points for u in users}
             else:
                 users = User.query.filter_by(is_admin=False).all()
                 group_label = "All Groups"
                 selected_group = "all"
                 show_t1 = True
                 show_t2 = True
+                t1_points = {u.id: u.tournament1_points for u in users}
+                t2_points = {u.id: u.tournament2_points for u in users}
+
+        classic_users = sorted(users, key=lambda u: t1_points[u.id], reverse=True)
+        odds_users = sorted(users, key=lambda u: t2_points[u.id], reverse=True)
+        return render_template(
+            "leaderboard.html",
+            classic_users=classic_users,
+            odds_users=odds_users,
+            t1_points=t1_points,
+            t2_points=t2_points,
+            group_label=group_label,
+            group_tabs=group_tabs,
+            selected_group=selected_group,
+            show_tournament1=show_t1,
+            show_tournament2=show_t2,
+        )
+
+    # Non-admin path
+    user_comps = list(current_user.competitions)
+    if not user_comps:
+        flash("You are not assigned to a group yet.", "danger")
+        return redirect(url_for("main.home"))
+
+    # Which competition to display
+    selected_comp_id = request.args.get("group", type=int)
+    if not selected_comp_id or not any(c.id == selected_comp_id for c in user_comps):
+        selected_comp_id = current_user.competition_id or user_comps[0].id
+
+    selected_comp = next(c for c in user_comps if c.id == selected_comp_id)
+    users = [u for u in selected_comp.members if not u.is_admin]
+    group_label = selected_comp.name
+    show_t1 = bool(selected_comp.include_tournament1)
+    show_t2 = bool(selected_comp.include_tournament2)
+
+    t1_points = {u.id: _t1_points_for_competition(u, selected_comp_id) for u in users}
+    t2_points = {u.id: _t2_points_for_competition(u, selected_comp_id) for u in users}
+    classic_users = sorted(users, key=lambda u: t1_points[u.id], reverse=True)
+    odds_users = sorted(users, key=lambda u: t2_points[u.id], reverse=True)
+
+    # Tabs if user is in multiple groups
+    if len(user_comps) > 1:
+        group_tabs = [{"value": str(c.id), "label": c.name} for c in user_comps]
+        selected_group = str(selected_comp_id)
     else:
-        if not current_user.group:
-            flash("You are not assigned to a group yet.", "danger")
-            return redirect(url_for("main.home"))
-        users = User.query.filter_by(is_admin=False, competition_id=current_user.competition_id).all()
-        group_label = current_user.group.name
         group_tabs = []
         selected_group = "all"
-        show_t1 = bool(current_user.group.include_tournament1)
-        show_t2 = bool(current_user.group.include_tournament2)
 
-    classic_users = sorted(users, key=lambda u: u.tournament1_points, reverse=True)
-    odds_users = sorted(users, key=lambda u: u.tournament2_points, reverse=True)
     return render_template(
         "leaderboard.html",
         classic_users=classic_users,
         odds_users=odds_users,
+        t1_points=t1_points,
+        t2_points=t2_points,
         group_label=group_label,
         group_tabs=group_tabs,
         selected_group=selected_group,
@@ -605,11 +729,6 @@ def leaderboard():
 @bp.route("/admin", methods=["GET", "POST"])
 @login_required
 def admin_dashboard():
-    """
-    Admin-only page for group management.
-    - Only users with is_admin=True can access
-    - Handles creating groups with signup code
-    """
     if not getattr(current_user, "is_admin", False):
         return "Access denied", 403
 
@@ -634,16 +753,44 @@ def admin_dashboard():
                 flash("Group code already exists.", "danger")
                 return redirect(url_for("main.admin_dashboard"))
 
-            db.session.add(
-                Competition(
-                    name=name,
-                    code=code,
-                    include_tournament1=include_t1,
-                    include_tournament2=include_t2,
-                )
-            )
+            try:
+                entry_fee = float(request.form.get("entry_fee") or 0)
+                if entry_fee < 0:
+                    entry_fee = 0.0
+            except ValueError:
+                entry_fee = 0.0
+
+            db.session.add(Competition(
+                name=name,
+                code=code,
+                include_tournament1=include_t1,
+                include_tournament2=include_t2,
+                entry_fee=entry_fee,
+            ))
             db.session.commit()
             flash("Group created successfully.", "success")
+            return redirect(url_for("main.admin_dashboard"))
+
+        if form_action == "update_group_fee":
+            group_id_raw = request.form.get("group_id", "")
+            if not group_id_raw.isdigit():
+                flash("Invalid group.", "danger")
+                return redirect(url_for("main.admin_dashboard"))
+            try:
+                fee = float(request.form.get("entry_fee") or 0)
+                if fee < 0:
+                    fee = 0.0
+            except ValueError:
+                flash("Invalid entry fee value.", "danger")
+                return redirect(url_for("main.admin_dashboard"))
+            group = db.session.get(Competition, int(group_id_raw))
+            if not group:
+                flash("Group not found.", "danger")
+                return redirect(url_for("main.admin_dashboard"))
+            group.entry_fee = fee
+            db.session.commit()
+            label = f"${fee:.2f} CAD" if fee > 0 else "Free"
+            flash(f"Entry fee for '{group.name}' set to {label}.", "success")
             return redirect(url_for("main.admin_dashboard"))
 
         if form_action == "delete_group":
@@ -663,12 +810,20 @@ def admin_dashboard():
                 flash("Group not found.", "danger")
                 return redirect(url_for("main.admin_dashboard"))
 
-            group_users = User.query.filter_by(competition_id=group.id, is_admin=False).all()
-            for user in group_users:
-                Prediction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-                OddsPrediction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-                GroupQualifierPrediction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-                PodiumPrediction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+            # Delete all predictions tagged with this competition
+            Prediction.query.filter_by(competition_id=group_id).delete(synchronize_session=False)
+            OddsPrediction.query.filter_by(competition_id=group_id).delete(synchronize_session=False)
+            GroupQualifierPrediction.query.filter_by(competition_id=group_id).delete(synchronize_session=False)
+            PodiumPrediction.query.filter_by(competition_id=group_id).delete(synchronize_session=False)
+
+            # Remove M2M memberships for this competition
+            db.session.execute(
+                user_competitions.delete().where(user_competitions.c.competition_id == group_id)
+            )
+
+            # Delete users whose primary group was this competition
+            primary_users = User.query.filter_by(competition_id=group_id, is_admin=False).all()
+            for user in primary_users:
                 db.session.delete(user)
 
             db.session.delete(group)
@@ -676,7 +831,6 @@ def admin_dashboard():
             flash("Group deleted successfully.", "success")
             return redirect(url_for("main.admin_dashboard"))
 
-    # GET request — render admin dashboard
     groups = Competition.query.order_by(Competition.name.asc()).all()
     return render_template("admin_dashboard.html", groups=groups)
 
@@ -684,7 +838,6 @@ def admin_dashboard():
 @bp.route("/admin/results", methods=["GET", "POST"])
 @login_required
 def admin_results():
-    """Admin-only page for entering results for Tournament 1 and Tournament 2."""
     if not getattr(current_user, "is_admin", False):
         return "Access denied", 403
 

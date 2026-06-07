@@ -970,3 +970,41 @@ button:hover {
     color: #856404;
     margin-bottom: 10px;
 }
+
+/* ===========================
+   Sign-up Deadline / Closed Banners
+   =========================== */
+.signup-deadline-banner {
+    background: #fff8e1;
+    border: 1px solid #f9a825;
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin: 16px auto;
+    max-width: 520px;
+    color: #5d4037;
+    font-size: 14px;
+    text-align: center;
+}
+
+.signup-closed-banner {
+    background: #fce4ec;
+    border: 1px solid #e91e63;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px auto;
+    max-width: 520px;
+    color: #880e4f;
+    font-size: 14px;
+    text-align: center;
+}
+
+.signup-closed-banner p {
+    margin: 4px 0;
+}
+
+/* Admin inline form (e.g. entry fee update) */
+.admin-inline-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}

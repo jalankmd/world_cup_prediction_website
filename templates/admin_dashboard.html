@@ -13,6 +13,9 @@
     <label>Group Code</label>
     <input type="text" name="group_code" placeholder="FRIENDS2026" required>
 
+    <label>Entry Fee (CAD — enter 0 for free)</label>
+    <input type="number" name="entry_fee" min="0" step="0.01" value="0" placeholder="0">
+
     <label><input type="checkbox" name="include_tournament1" checked> Include Competition 1</label>
     <label><input type="checkbox" name="include_tournament2" checked> Include Competition 2</label>
 
@@ -25,20 +28,36 @@
         <tr>
             <th>Name</th>
             <th>Code</th>
-            <th>Competition 1</th>
-            <th>Competition 2</th>
-            <th>Users</th>
-            <th>Delete Group</th>
+            <th>Comp 1</th>
+            <th>Comp 2</th>
+            <th>Entry Fee</th>
+            <th>Participants</th>
+            <th>Prize Pool</th>
+            <th>Update Fee</th>
+            <th>Delete</th>
         </tr>
     </thead>
     <tbody>
         {% for group in groups %}
+        {% set member_count = group.members | selectattr("is_admin", "equalto", false) | list | length %}
+        {% set pool = group.entry_fee * member_count %}
         <tr>
             <td>{{ group.name }}</td>
             <td>{{ group.code }}</td>
             <td>{{ "Yes" if group.include_tournament1 else "No" }}</td>
             <td>{{ "Yes" if group.include_tournament2 else "No" }}</td>
-            <td>{{ group.users|length }}</td>
+            <td>{% if group.entry_fee > 0 %}${{ "%.2f"|format(group.entry_fee) }} CAD{% else %}Free{% endif %}</td>
+            <td>{{ member_count }}</td>
+            <td>{% if group.entry_fee > 0 %}${{ "%.2f"|format(pool) }} CAD{% else %}—{% endif %}</td>
+            <td>
+                <form method="POST" class="admin-inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="form_action" value="update_group_fee">
+                    <input type="hidden" name="group_id" value="{{ group.id }}">
+                    <input type="number" name="entry_fee" min="0" step="0.01" value="{{ group.entry_fee }}" style="width:80px">
+                    <button type="submit">Set</button>
+                </form>
+            </td>
             <td>
                 <form method="POST" class="group-delete-form" onsubmit="return confirm('Delete this group and all users in it?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

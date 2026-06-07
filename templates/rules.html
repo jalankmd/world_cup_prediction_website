@@ -3,10 +3,43 @@
 <div class="rules-page">
     <h2>Rules &amp; Points System</h2>
 
-    <section class="rules-section">
-        <h3>Entry Fee</h3>
-        <p class="rules-entry-fee">$30 CAD &mdash; covers both competitions (mandatory)</p>
-    </section>
+    {% if competitions_prize_info %}
+        {% for info in competitions_prize_info %}
+        <section class="rules-section">
+            <h3>Entry Fee &amp; Prizes &mdash; {{ info.name }}</h3>
+            <p class="rules-entry-fee">Entry fee: <strong>${{ "%.2f"|format(info.entry_fee) }} CAD</strong> &mdash; {{ info.member_count }} participant{{ "s" if info.member_count != 1 else "" }} &mdash; Total prize pool: <strong>${{ "%.2f"|format(info.total_pool) }} CAD</strong></p>
+            <table class="rules-table">
+                <thead>
+                    <tr><th>Prize</th><th>Amount</th><th>Share</th></tr>
+                </thead>
+                <tbody>
+                    {% if info.include_tournament1 %}
+                    <tr>
+                        <td>Competition 1 — 1st place</td>
+                        <td><strong>${{ "%.2f"|format(info.comp1_winner) }} CAD</strong></td>
+                        <td>50%</td>
+                    </tr>
+                    {% endif %}
+                    {% if info.include_tournament2 %}
+                    <tr>
+                        <td>Competition 2 — 1st place</td>
+                        <td><strong>${{ "%.2f"|format(info.comp2_winner) }} CAD</strong></td>
+                        <td>30%</td>
+                    </tr>
+                    {% endif %}
+                    {% if info.include_tournament1 %}
+                    <tr>
+                        <td>Competition 1 — 2nd place</td>
+                        <td><strong>${{ "%.2f"|format(info.comp1_second) }} CAD</strong></td>
+                        <td>20%</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <p class="rules-note">Prize amounts update automatically as more participants join.</p>
+        </section>
+        {% endfor %}
+    {% endif %}
 
     <div class="rules-grid">
 
@@ -90,7 +123,6 @@
         <h3>General Rules</h3>
         <ul class="rules-list">
             <li>You must have a valid group code to register.</li>
-            <li>All participants must enter <strong>both</strong> competitions — you cannot sign up for one only.</li>
             <li>Each player competes independently — no team play.</li>
             <li>The admin enters all official results. Points are updated shortly after each match ends.</li>
             <li>Locked predictions cannot be changed, even if there is a technical issue.</li>

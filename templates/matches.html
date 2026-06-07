@@ -2,14 +2,26 @@
 
 {% block content %}
 <h2>Matches</h2>
-{% if user_group %}
+
+{% if user_all_competitions|length > 1 %}
+    <div class="date-tabs" role="tablist" aria-label="Switch group">
+        {% for comp in user_all_competitions %}
+            <a
+                href="{{ url_for('main.matches', group_id=comp.id, competition=competition, date=selected_date) }}"
+                class="date-tab {% if comp.id == active_group_id %}active{% endif %}"
+            >
+                {{ comp.name }}
+            </a>
+        {% endfor %}
+    </div>
+{% elif user_group %}
     <p class="meta-line">Group: {{ user_group.name }}</p>
 {% endif %}
 
 <div class="competition-tabs" role="tablist" aria-label="Select competition">
     {% if allow_tournament1 %}
         <a
-            href="{{ url_for('main.matches', competition='classic', date=selected_date) }}"
+            href="{{ url_for('main.matches', competition='classic', date=selected_date, group_id=active_group_id) }}"
             class="competition-tab {% if competition == 'classic' %}active{% endif %}"
         >
             Competition 1: Score Predictor
@@ -17,7 +29,7 @@
     {% endif %}
     {% if allow_tournament2 %}
         <a
-            href="{{ url_for('main.matches', competition='odds', date=selected_date) }}"
+            href="{{ url_for('main.matches', competition='odds', date=selected_date, group_id=active_group_id) }}"
             class="competition-tab {% if competition == 'odds' %}active{% endif %}"
         >
             Competition 2: Odds Predictor
@@ -28,7 +40,7 @@
 <div class="date-tabs" role="tablist" aria-label="Filter matches by date">
     {% for tab in date_tabs %}
         <a
-            href="{{ url_for('main.matches', date=tab.value, competition=competition) }}"
+            href="{{ url_for('main.matches', date=tab.value, competition=competition, group_id=active_group_id) }}"
             class="date-tab {% if selected_date == tab.value %}active{% endif %}"
         >
             {{ tab.label }}
@@ -93,6 +105,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="selected_date" value="{{ selected_date }}">
                                     <input type="hidden" name="competition" value="classic">
+                                    <input type="hidden" name="group_id" value="{{ active_group_id }}">
                                     <input type="number" name="predicted_home_score" min="0" max="20" value="{{ pred.predicted_home_score if pred else '' }}" required>
                                     <span>-</span>
                                     <input type="number" name="predicted_away_score" min="0" max="20" value="{{ pred.predicted_away_score if pred else '' }}" required>
@@ -133,6 +146,7 @@
                         <input type="hidden" name="group_name" value="{{ card.group_name }}">
                         <input type="hidden" name="selected_date" value="{{ selected_date }}">
                         <input type="hidden" name="competition" value="classic">
+                        <input type="hidden" name="group_id" value="{{ active_group_id }}">
                         <select name="team_1" {% if card.locked %}disabled{% endif %} required>
                             <option value="">Pick team 1</option>
                             {% for team in card.teams %}
@@ -177,6 +191,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="selected_date" value="{{ selected_date }}">
             <input type="hidden" name="competition" value="classic">
+            <input type="hidden" name="group_id" value="{{ active_group_id }}">
 
             <label>Champion</label>
             <select name="champion_team" {% if podium_locked %}disabled{% endif %} required>
@@ -246,6 +261,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="selected_date" value="{{ selected_date }}">
                                     <input type="hidden" name="competition" value="odds">
+                                    <input type="hidden" name="group_id" value="{{ active_group_id }}">
                                     <select name="predicted_outcome" required>
                                         <option value="">Choose</option>
                                         <option value="home" {% if pred and pred.predicted_outcome == 'home' %}selected{% endif %}>{{ match.home_team }}</option>

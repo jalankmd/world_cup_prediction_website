@@ -10,11 +10,20 @@
     </div>
 
     {% if not current_user.is_authenticated %}
-        <!-- Buttons for new users -->
-        <a href="{{ url_for('main.login') }}" class="btn-secondary">Login</a>
-        <a href="{{ url_for('main.register') }}" class="btn-primary">Register</a>
+        {% if signup_open %}
+            <div class="signup-deadline-banner">
+                Registration closes <strong>{{ signup_deadline_display }}</strong>. Sign up before it's too late!
+            </div>
+            <a href="{{ url_for('main.login') }}" class="btn-secondary">Login</a>
+            <a href="{{ url_for('main.register') }}" class="btn-primary">Register</a>
+        {% else %}
+            <div class="signup-closed-banner">
+                Sign-up is now closed.
+                To request access, please contact the site owner.
+            </div>
+            <a href="{{ url_for('main.login') }}" class="btn-secondary">Login</a>
+        {% endif %}
     {% else %}
-        <!-- Button for logged-in users -->
         <a href="{{ url_for('main.matches') }}" class="btn-primary">View Matches</a>
     {% endif %}
 </div>

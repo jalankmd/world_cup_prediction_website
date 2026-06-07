@@ -3,7 +3,7 @@
 {% block content %}
 <h2>Leaderboard</h2>
 
-{% if current_user.is_admin and group_tabs %}
+{% if group_tabs %}
     <div class="date-tabs" role="tablist" aria-label="Filter leaderboard by group">
         {% for tab in group_tabs %}
             <a
@@ -35,7 +35,7 @@
                         <tr>
                             <td>{{ loop.index }}</td>
                             <td>{{ user.username }}</td>
-                            <td>{{ user.tournament1_points }}</td>
+                            <td>{{ t1_points[user.id] }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -59,7 +59,7 @@
                         <tr>
                             <td>{{ loop.index }}</td>
                             <td>{{ user.username }}</td>
-                            <td>{{ user.tournament2_points }}</td>
+                            <td>{{ t2_points[user.id] }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

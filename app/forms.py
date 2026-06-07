@@ -4,6 +4,12 @@ from wtforms import StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, EqualTo, Length, ValidationError, NumberRange
 from .models import User, Competition
 
+
+class JoinCompetitionForm(FlaskForm):
+    """Form for joining an additional competition group via code."""
+    group_code = StringField("Group Code", validators=[DataRequired(), Length(max=40)])
+    submit = SubmitField("Join Group")
+
 # -----------------------
 # Registration Form
 # -----------------------
