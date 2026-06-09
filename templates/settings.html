@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Settings</h2>
+
+<div class="settings-grid">
+
+    <section class="settings-card">
+        <h3>Favourite Team</h3>
+        <p class="meta-line">Pick your favourite team in the World Cup. Just for fun — visible on your profile.</p>
+
+        {% if current_user.favourite_team %}
+            <div class="fav-team-current">
+                {% if team_flag_codes.get(current_user.favourite_team) %}
+                    <img class="country-flag fav-flag" src="https://flagcdn.com/40x30/{{ team_flag_codes.get(current_user.favourite_team) }}.png" alt="{{ current_user.favourite_team }} flag">
+                {% endif %}
+                <span class="fav-team-name">{{ current_user.favourite_team }}</span>
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('main.settings') }}" class="settings-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_action" value="favourite_team">
+            <div class="form-group">
+                <label for="favourite_team">Select your team</label>
+                <select name="favourite_team" id="favourite_team" class="form-control">
+                    <option value="">— No favourite —</option>
+                    {% for team in all_teams %}
+                        <option value="{{ team }}" {% if current_user.favourite_team == team %}selected{% endif %}>{{ team }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </section>
+
+    <section class="settings-card">
+        <h3>Join a Group</h3>
+        {% if deadline_passed %}
+            <p class="meta-line">Sign-up closed on {{ signup_deadline_display }}. Contact the site owner to be added manually.</p>
+        {% else %}
+            <p class="meta-line">Enter the group code shared by your admin to join an additional competition. Deadline: <strong>{{ signup_deadline_display }}</strong>.</p>
+
+            {% if current_user.competitions %}
+                <div class="settings-current-groups">
+                    <span class="settings-label">Your groups:</span>
+                    {% for comp in current_user.competitions %}
+                        <span class="settings-group-badge">{{ comp.name }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('main.settings') }}" class="settings-form">
+                {{ join_form.hidden_tag() }}
+                <input type="hidden" name="form_action" value="join_group">
+                <div class="form-group">
+                    {{ join_form.group_code.label }}
+                    {{ join_form.group_code(class="form-control", placeholder="Enter group code") }}
+                    {% for error in join_form.group_code.errors %}
+                        <span class="error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-primary">Join Group</button>
+            </form>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

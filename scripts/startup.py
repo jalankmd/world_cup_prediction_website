@@ -27,6 +27,12 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
+    try:
+        db.session.execute(db.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS favourite_team VARCHAR(50)"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # ── Multi-competition: competition_id on prediction tables ─────────────────
 
     # competitions.entry_fee

@@ -267,36 +267,62 @@ def register():
 
 
 # ---------------------------
-# Join Another Competition
+# Settings (favourite team + join group)
 # ---------------------------
+@bp.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings():
+    if current_user.is_admin:
+        return redirect(url_for("main.home"))
+
+    join_form = JoinCompetitionForm()
+    deadline_passed = _utc_now_naive() >= SIGNUP_DEADLINE_UTC
+
+    if request.method == "POST":
+        action = request.form.get("form_action")
+
+        if action == "favourite_team":
+            team = request.form.get("favourite_team", "").strip()
+            if team in TEAM_FLAG_CODES or team == "":
+                current_user.favourite_team = team or None
+                db.session.commit()
+                flash("Favourite team saved!", "success")
+            else:
+                flash("Invalid team selection.", "danger")
+            return redirect(url_for("main.settings"))
+
+        if action == "join_group":
+            if deadline_passed:
+                flash("Sign-up is now closed. Please contact the site owner to join.", "warning")
+                return redirect(url_for("main.settings"))
+            if join_form.validate():
+                group = Competition.query.filter_by(code=join_form.group_code.data.strip()).first()
+                if not group:
+                    flash("Invalid group code.", "danger")
+                elif any(c.id == group.id for c in current_user.competitions):
+                    flash(f"You are already a member of '{group.name}'.", "info")
+                else:
+                    current_user.competitions.append(group)
+                    db.session.commit()
+                    flash(f"Joined '{group.name}'!", "success")
+            return redirect(url_for("main.settings"))
+
+    all_teams = sorted(TEAM_FLAG_CODES.keys())
+    return render_template(
+        "settings.html",
+        join_form=join_form,
+        deadline_passed=deadline_passed,
+        signup_deadline_display=SIGNUP_DEADLINE_DISPLAY,
+        all_teams=all_teams,
+        team_flag_codes=TEAM_FLAG_CODES,
+    )
+
+
+# Legacy redirect
 @bp.route("/join", methods=["GET", "POST"])
 @login_required
 def join_competition():
-    if current_user.is_admin:
-        flash("Admins cannot join competitions.", "info")
-        return redirect(url_for("main.home"))
-
-    if _utc_now_naive() >= SIGNUP_DEADLINE_UTC:
-        flash("Sign-up is now closed. Please contact the site owner to join.", "warning")
-        return redirect(url_for("main.home"))
-
-    form = JoinCompetitionForm()
-    if form.validate_on_submit():
-        group = Competition.query.filter_by(code=form.group_code.data.strip()).first()
-        if not group:
-            flash("Invalid group code.", "danger")
-            return render_template("join_competition.html", form=form)
-
-        if any(c.id == group.id for c in current_user.competitions):
-            flash(f"You are already a member of '{group.name}'.", "info")
-            return redirect(url_for("main.matches"))
-
-        current_user.competitions.append(group)
-        db.session.commit()
-        flash(f"Joined '{group.name}'!", "success")
-        return redirect(url_for("main.matches", group_id=group.id))
-
-    return render_template("join_competition.html", form=form)
+    return redirect(url_for("main.settings"))
 
 
 # ---------------------------

@@ -1464,3 +1464,80 @@ button:hover {
 .progress-no-data p {
     font-size: 16px;
 }
+
+/* ===========================
+   Settings Page
+   =========================== */
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 16px;
+}
+
+@media (max-width: 700px) {
+    .settings-grid { grid-template-columns: 1fr; }
+}
+
+.settings-card {
+    background: #f4f8fc;
+    border: 1px solid #d7e4f0;
+    border-radius: 10px;
+    padding: 20px 22px;
+}
+
+.settings-card h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    color: #1e3a52;
+}
+
+.settings-form {
+    margin-top: 14px;
+}
+
+.fav-team-current {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid #c5d8ec;
+    border-radius: 7px;
+}
+
+.fav-flag {
+    width: 40px;
+    height: 30px;
+    object-fit: cover;
+    border-radius: 3px;
+}
+
+.fav-team-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e3a52;
+}
+
+.settings-current-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.settings-label {
+    font-size: 12px;
+    color: #6b8097;
+}
+
+.settings-group-badge {
+    background: #dce9f5;
+    color: #1e3a52;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 600;
+}

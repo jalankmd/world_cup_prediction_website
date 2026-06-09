@@ -48,6 +48,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(512), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    favourite_team = db.Column(db.String(50), nullable=True)
     # Primary/registration group (FK). Kept for backward compat and as default context.
     competition_id = db.Column(db.Integer, db.ForeignKey("competitions.id"), nullable=True)
 
