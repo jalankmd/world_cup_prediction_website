@@ -25,10 +25,10 @@ from datetime import datetime, timezone, timedelta
 
 bp = Blueprint("main", __name__)
 
-# Sign-up closes Thursday June 11, 2026 at 11:59 PM Eastern (EDT = UTC-4)
-# 11:59 PM EDT = 03:59 UTC on June 12
-SIGNUP_DEADLINE_UTC = datetime(2026, 6, 12, 3, 59, 0)
-SIGNUP_DEADLINE_DISPLAY = "Thursday, June 11 at 11:59 PM Eastern Time"
+# Sign-up closes Wednesday June 10, 2026 at 11:59 PM Eastern (EDT = UTC-4)
+# 11:59 PM EDT = 03:59 UTC on June 11
+SIGNUP_DEADLINE_UTC = datetime(2026, 6, 11, 3, 59, 0)
+SIGNUP_DEADLINE_DISPLAY = "Wednesday, June 10 at 11:59 PM Eastern Time"
 
 TEAM_FLAG_CODES = {
     "Algeria": "dz",
