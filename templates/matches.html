@@ -103,22 +103,34 @@ setInterval(updateCountdown, 1000);
                 <span class="pred-check-icon">{% if classic_pred_count == total_match_count %}✓{% else %}○{% endif %}</span>
                 <span>Score predictions</span>
                 <span class="pred-check-count">{{ classic_pred_count }}/{{ total_match_count }}</span>
+                {% if classic_pred_count < total_match_count and next_score_deadline_iso %}
+                    <span class="pred-deadline-countdown" data-deadline="{{ next_score_deadline_iso }}">—</span>
+                {% endif %}
             </div>
             <div class="pred-checklist-item {% if qualifier_pred_count == 12 %}done{% endif %}">
                 <span class="pred-check-icon">{% if qualifier_pred_count == 12 %}✓{% else %}○{% endif %}</span>
                 <span>Group qualifier picks</span>
                 <span class="pred-check-count">{{ qualifier_pred_count }}/12 groups</span>
+                {% if qualifier_pred_count < 12 and next_group_deadline_iso %}
+                    <span class="pred-deadline-countdown" data-deadline="{{ next_group_deadline_iso }}">—</span>
+                {% endif %}
             </div>
-            <div class="pred-checklist-item {% if podium_prediction %}done{% endif %}">
-                <span class="pred-check-icon">{% if podium_prediction %}✓{% else %}○{% endif %}</span>
+            <div class="pred-checklist-item {% if champion_picks_count == 3 %}done{% endif %}">
+                <span class="pred-check-icon">{% if champion_picks_count == 3 %}✓{% else %}○{% endif %}</span>
                 <span>Champion picks</span>
-                <span class="pred-check-count">{% if podium_prediction %}Done{% else %}Not done{% endif %}</span>
+                <span class="pred-check-count">{{ champion_picks_count }}/3</span>
+                {% if champion_picks_count < 3 and champion_deadline_iso %}
+                    <span class="pred-deadline-countdown" data-deadline="{{ champion_deadline_iso }}">—</span>
+                {% endif %}
             </div>
         {% else %}
             <div class="pred-checklist-item {% if odds_pred_count == total_match_count %}done{% endif %}">
                 <span class="pred-check-icon">{% if odds_pred_count == total_match_count %}✓{% else %}○{% endif %}</span>
                 <span>Odds predictions</span>
                 <span class="pred-check-count">{{ odds_pred_count }}/{{ total_match_count }}</span>
+                {% if odds_pred_count < total_match_count and next_score_deadline_iso %}
+                    <span class="pred-deadline-countdown" data-deadline="{{ next_score_deadline_iso }}">—</span>
+                {% endif %}
             </div>
         {% endif %}
     </div>
@@ -135,6 +147,12 @@ setInterval(updateCountdown, 1000);
                 <div class="pred-progress-bar" style="width: {{ (qualifier_pred_count / 12 * 100) | int }}%"></div>
             </div>
         </div>
+        <div class="pred-progress-row">
+            <span class="pred-progress-label">Champion picks: {{ champion_picks_count }}/3</span>
+            <div class="pred-progress-track">
+                <div class="pred-progress-bar" style="width: {{ (champion_picks_count / 3 * 100) | int }}%"></div>
+            </div>
+        </div>
     {% else %}
         <div class="pred-progress-row">
             <span class="pred-progress-label">Odds predictions: {{ odds_pred_count }}/{{ total_match_count }}</span>
@@ -145,6 +163,20 @@ setInterval(updateCountdown, 1000);
     {% endif %}
     <p class="pred-progress-hint">You can edit predictions any time before kickoff (Eastern Time).</p>
 </div>
+<script>
+function updateChecklistCountdowns() {
+    document.querySelectorAll('.pred-deadline-countdown[data-deadline]').forEach(function(el) {
+        var diff = new Date(el.dataset.deadline) - new Date();
+        if (diff <= 0) { el.textContent = '· locked'; return; }
+        var h = Math.floor(diff / 3600000);
+        var m = Math.floor((diff % 3600000) / 60000);
+        var s = Math.floor((diff % 60000) / 1000);
+        el.textContent = '· locks in ' + (h > 0 ? h + 'h ' : '') + m + 'm ' + String(s).padStart(2,'0') + 's';
+    });
+}
+updateChecklistCountdowns();
+setInterval(updateChecklistCountdowns, 1000);
+</script>
 
 {% if competition == 'classic' %}
     <div class="matches-table-wrap">

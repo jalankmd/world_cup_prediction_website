@@ -23,7 +23,7 @@
         <a href="{{ url_for('main.user_predictions', group=selected_comp_id, tab='qualifiers') }}"
            class="competition-tab {% if pred_tab == 'qualifiers' %}active{% endif %}">Group Qualifiers</a>
         <a href="{{ url_for('main.user_predictions', group=selected_comp_id, tab='podium') }}"
-           class="competition-tab {% if pred_tab == 'podium' %}active{% endif %}">Podium Picks</a>
+           class="competition-tab {% if pred_tab == 'podium' %}active{% endif %}">Champion Picks</a>
     {% endif %}
     {% if selected_comp.include_tournament2 %}
         <a href="{{ url_for('main.user_predictions', group=selected_comp_id, tab='odds') }}"
@@ -158,16 +158,17 @@
             </table>
         </div>
 
-    {# ── Podium Picks ──────────────────────────────────────────────── #}
+    {# ── Champion Picks ──────────────────────────────────────────────── #}
     {% elif pred_tab == 'podium' %}
+        <p class="meta-line">Each user picks 3 teams they think will win the World Cup. 1st pick = 10 pts, 2nd = 6 pts, 3rd = 3 pts if it matches the champion.</p>
         <div class="matches-table-wrap">
             <table class="matches-table admin-pred-table">
                 <thead>
                     <tr>
                         <th>User</th>
-                        <th>Champion</th>
-                        <th>Runner-up</th>
-                        <th>Third Place</th>
+                        <th>1st Pick</th>
+                        <th>2nd Pick</th>
+                        <th>3rd Pick</th>
                         <th>Points</th>
                     </tr>
                 </thead>

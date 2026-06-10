@@ -457,6 +457,27 @@ def matches():
     missing_soon = sum(1 for m in upcoming_open if m.match_date <= soon_cutoff and m.id not in active_pred_ids)
     missing_total = sum(1 for m in upcoming_open if m.id not in active_pred_ids)
 
+    # Checklist: per-item deadlines and champion picks count
+    classic_unpredicted = [m for m in upcoming_open if m.id not in set(predictions.keys())]
+    next_score_deadline_iso = classic_unpredicted[0].match_date.strftime("%Y-%m-%dT%H:%M:%SZ") if classic_unpredicted else None
+
+    next_group_deadline = None
+    for card in group_cards:
+        if not card["locked"] and not card["prediction"] and card["deadline"]:
+            if next_group_deadline is None or card["deadline"] < next_group_deadline:
+                next_group_deadline = card["deadline"]
+    next_group_deadline_iso = next_group_deadline.strftime("%Y-%m-%dT%H:%M:%SZ") if next_group_deadline else None
+
+    champion_deadline_iso = podium_deadline.strftime("%Y-%m-%dT%H:%M:%SZ") if podium_deadline and not podium_locked else None
+
+    champion_picks_count = 0
+    if podium_prediction:
+        champion_picks_count = sum(1 for t in [
+            podium_prediction.champion_team,
+            podium_prediction.runner_up_team,
+            podium_prediction.third_place_team,
+        ] if t)
+
     return render_template(
         "matches.html",
         matches=filtered_matches,
@@ -484,6 +505,10 @@ def matches():
         missing_total=missing_total,
         next_match=next_match,
         next_kickoff_iso=next_kickoff_iso,
+        next_score_deadline_iso=next_score_deadline_iso,
+        next_group_deadline_iso=next_group_deadline_iso,
+        champion_deadline_iso=champion_deadline_iso,
+        champion_picks_count=champion_picks_count,
     )
 
 
