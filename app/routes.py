@@ -281,16 +281,6 @@ def settings():
     if request.method == "POST":
         action = request.form.get("form_action")
 
-        if action == "favourite_team":
-            team = request.form.get("favourite_team", "").strip()
-            if team in TEAM_FLAG_CODES or team == "":
-                current_user.favourite_team = team or None
-                db.session.commit()
-                flash("Favourite team saved!", "success")
-            else:
-                flash("Invalid team selection.", "danger")
-            return redirect(url_for("main.settings"))
-
         if action == "join_group":
             if deadline_passed:
                 flash("Sign-up is now closed. Please contact the site owner to join.", "warning")
@@ -307,14 +297,11 @@ def settings():
                     flash(f"Joined '{group.name}'!", "success")
             return redirect(url_for("main.settings"))
 
-    all_teams = sorted(TEAM_FLAG_CODES.keys())
     return render_template(
         "settings.html",
         join_form=join_form,
         deadline_passed=deadline_passed,
         signup_deadline_display=SIGNUP_DEADLINE_DISPLAY,
-        all_teams=all_teams,
-        team_flag_codes=TEAM_FLAG_CODES,
     )
 
 
