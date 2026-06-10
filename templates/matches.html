@@ -103,9 +103,6 @@ setInterval(updateCountdown, 1000);
                 <span class="pred-check-icon">{% if classic_pred_count == total_match_count %}✓{% else %}○{% endif %}</span>
                 <span>Score predictions</span>
                 <span class="pred-check-count">{{ classic_pred_count }}/{{ total_match_count }}</span>
-                {% if classic_pred_count < total_match_count and next_score_deadline_iso %}
-                    <span class="pred-deadline-countdown" data-deadline="{{ next_score_deadline_iso }}">—</span>
-                {% endif %}
             </div>
             <div class="pred-checklist-item {% if qualifier_pred_count == 12 %}done{% endif %}">
                 <span class="pred-check-icon">{% if qualifier_pred_count == 12 %}✓{% else %}○{% endif %}</span>
@@ -128,9 +125,6 @@ setInterval(updateCountdown, 1000);
                 <span class="pred-check-icon">{% if odds_pred_count == total_match_count %}✓{% else %}○{% endif %}</span>
                 <span>Odds predictions</span>
                 <span class="pred-check-count">{{ odds_pred_count }}/{{ total_match_count }}</span>
-                {% if odds_pred_count < total_match_count and next_score_deadline_iso %}
-                    <span class="pred-deadline-countdown" data-deadline="{{ next_score_deadline_iso }}">—</span>
-                {% endif %}
             </div>
         {% endif %}
     </div>
@@ -161,7 +155,7 @@ setInterval(updateCountdown, 1000);
             </div>
         </div>
     {% endif %}
-    <p class="pred-progress-hint">You can edit predictions any time before kickoff (Eastern Time).</p>
+    <p class="pred-progress-hint">Each score prediction locks individually at that game's kickoff — predict any game up until the moment it starts (Eastern Time).</p>
 </div>
 <script>
 function updateChecklistCountdowns() {
