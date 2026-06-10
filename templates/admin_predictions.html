@@ -22,7 +22,7 @@
             <a href="{{ url_for('main.admin_predictions', group=selected_group_id, tab='classic') }}"
                class="competition-tab {% if pred_tab == 'classic' %}active{% endif %}">Score Predictions</a>
             <a href="{{ url_for('main.admin_predictions', group=selected_group_id, tab='qualifiers') }}"
-               class="competition-tab {% if pred_tab == 'qualifiers' %}active{% endif %}">Group Qualifiers</a>
+               class="competition-tab {% if pred_tab == 'qualifiers' %}active{% endif %}">Group Top 2</a>
             <a href="{{ url_for('main.admin_predictions', group=selected_group_id, tab='podium') }}"
                class="competition-tab {% if pred_tab == 'podium' %}active{% endif %}">Champion Picks</a>
         {% endif %}

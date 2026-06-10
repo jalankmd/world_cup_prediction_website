@@ -106,7 +106,7 @@ setInterval(updateCountdown, 1000);
             </div>
             <div class="pred-checklist-item {% if qualifier_pred_count == 12 %}done{% endif %}">
                 <span class="pred-check-icon">{% if qualifier_pred_count == 12 %}✓{% else %}○{% endif %}</span>
-                <span>Group qualifier picks</span>
+                <span>Group top 2 picks</span>
                 <span class="pred-check-count">{{ qualifier_pred_count }}/12 groups</span>
                 {% if qualifier_pred_count < 12 and next_group_deadline_iso %}
                     <span class="pred-deadline-countdown" data-deadline="{{ next_group_deadline_iso }}">—</span>
@@ -136,7 +136,7 @@ setInterval(updateCountdown, 1000);
             </div>
         </div>
         <div class="pred-progress-row">
-            <span class="pred-progress-label">Group qualifier picks: {{ qualifier_pred_count }}/12</span>
+            <span class="pred-progress-label">Group top 2 picks: {{ qualifier_pred_count }}/12</span>
             <div class="pred-progress-track">
                 <div class="pred-progress-bar" style="width: {{ (qualifier_pred_count / 12 * 100) | int }}%"></div>
             </div>
@@ -256,8 +256,8 @@ setInterval(updateChecklistCountdowns, 1000);
     </div>
 
     <section class="bonus-section">
-        <h3>Group Qualifier Picks</h3>
-        <p>Pick 2 teams from each group before that group starts. You get 1 point per correct team.</p>
+        <h3>Group Top 2 Picks</h3>
+        <p>Pick the 2 teams you think will finish in the top 2 of each group before that group starts. Order doesn't matter &mdash; you get 1 point per correct team.</p>
         <div class="group-grid">
             {% for card in group_cards %}
                 <div class="group-card {% if card.locked %}locked{% endif %}">
