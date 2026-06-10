@@ -59,7 +59,7 @@ world_cup_2026_matches = [
     {"home_team": "Austria", "away_team": "Jordan", "match_date": "2026-06-16 00:01"},
 
     # June 17
-    {"home_team": "Portugal", "away_team": "Uzbekistan", "match_date": "2026-06-17 00:01"},
+    {"home_team": "Portugal", "away_team": "DR Congo", "match_date": "2026-06-17 00:01"},
     {"home_team": "England", "away_team": "Croatia", "match_date": "2026-06-17 00:01"},
     {"home_team": "Ghana", "away_team": "Panama", "match_date": "2026-06-17 00:01"},
     {"home_team": "Uzbekistan", "away_team": "Colombia", "match_date": "2026-06-17 00:01"},

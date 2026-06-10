@@ -170,6 +170,23 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
+    # ── Fix duplicate Portugal vs Uzbekistan (June 17 should be Portugal vs DR Congo) ──
+    # The seed file incorrectly had Portugal vs Uzbekistan twice (Jun 17 + Jun 23).
+    # Fix: rename the lower-ID duplicate to Portugal vs DR Congo.
+    try:
+        db.session.execute(db.text("""
+            UPDATE matches
+            SET home_team = 'Portugal', away_team = 'DR Congo'
+            WHERE id = (
+                SELECT MIN(id) FROM matches
+                WHERE home_team = 'Portugal' AND away_team = 'Uzbekistan'
+                  AND (SELECT COUNT(*) FROM matches WHERE home_team = 'Portugal' AND away_team = 'Uzbekistan') > 1
+            )
+        """))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # ── Seed matches and create admin ──────────────────────────────────────────
     if Match.query.count() == 0:
         from scripts.seed_matches import seed_matches, seed_knockout_matches
@@ -263,8 +280,9 @@ with app.app_context():
         ("Panama",                  "England",           "2026-06-27 21:00:00"),
         ("Croatia",                 "Ghana",             "2026-06-27 21:00:00"),
         # Group L
-        ("Portugal",                "Uzbekistan",        "2026-06-17 17:00:00"),
+        ("Portugal",                "DR Congo",          "2026-06-17 17:00:00"),
         ("Uzbekistan",              "Colombia",          "2026-06-18 02:00:00"),
+        ("Portugal",                "Uzbekistan",        "2026-06-23 17:00:00"),
         ("Colombia",                "DR Congo",          "2026-06-24 02:00:00"),
         ("Colombia",                "Portugal",          "2026-06-27 23:30:00"),
         ("DR Congo",                "Uzbekistan",        "2026-06-27 23:30:00"),
