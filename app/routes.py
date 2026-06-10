@@ -384,7 +384,12 @@ def matches():
 
     selected_date = request.args.get("date", "all")
 
-    available_dates = sorted({m.match_date.date() for m in all_matches if m.match_date})
+    _edt = timedelta(hours=-4)
+
+    def _et_date(dt):
+        return (dt + _edt).date()
+
+    available_dates = sorted({_et_date(m.match_date) for m in all_matches if m.match_date})
     date_tabs = [{"value": "all", "label": "All"}] + [
         {"value": d.strftime("%Y-%m-%d"), "label": d.strftime("%b %d")} for d in available_dates
     ]
@@ -394,7 +399,7 @@ def matches():
     else:
         try:
             target_date = datetime.strptime(selected_date, "%Y-%m-%d").date()
-            filtered_matches = [m for m in all_matches if m.match_date and m.match_date.date() == target_date]
+            filtered_matches = [m for m in all_matches if m.match_date and _et_date(m.match_date) == target_date]
         except ValueError:
             selected_date = "all"
             filtered_matches = all_matches
