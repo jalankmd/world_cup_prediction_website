@@ -10,16 +10,16 @@ from app.models import Match
 TEAM_TO_GROUP = {
     "Mexico": "A", "South Africa": "A", "South Korea": "A", "Czech Republic": "A",
     "Canada": "B", "Bosnia and Herzegovina": "B", "Qatar": "B", "Switzerland": "B",
-    "USA": "C", "Paraguay": "C", "Australia": "C", "Turkey": "C",
-    "Brazil": "D", "Morocco": "D", "Haiti": "D", "Scotland": "D",
+    "Brazil": "C", "Morocco": "C", "Haiti": "C", "Scotland": "C",
+    "USA": "D", "Paraguay": "D", "Australia": "D", "Turkey": "D",
     "Germany": "E", "Curaçao": "E", "Ivory Coast": "E", "Ecuador": "E",
     "Netherlands": "F", "Japan": "F", "Sweden": "F", "Tunisia": "F",
-    "Spain": "G", "Cape Verde": "G", "Belgium": "G", "Egypt": "G",
-    "Saudi Arabia": "H", "Uruguay": "H", "Iran": "H", "New Zealand": "H",
+    "Belgium": "G", "Egypt": "G", "Iran": "G", "New Zealand": "G",
+    "Spain": "H", "Cape Verde": "H", "Saudi Arabia": "H", "Uruguay": "H",
     "France": "I", "Senegal": "I", "Iraq": "I", "Norway": "I",
     "Argentina": "J", "Algeria": "J", "Austria": "J", "Jordan": "J",
-    "England": "K", "Croatia": "K", "Ghana": "K", "Panama": "K",
-    "Portugal": "L", "Uzbekistan": "L", "Colombia": "L", "DR Congo": "L",
+    "Portugal": "K", "Uzbekistan": "K", "Colombia": "K", "DR Congo": "K",
+    "England": "L", "Croatia": "L", "Ghana": "L", "Panama": "L",
 }
 
 # ---------------------------

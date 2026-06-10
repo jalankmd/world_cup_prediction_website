@@ -170,6 +170,25 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
+    # ── Fix match group_name assignments (groups C/D, G/H, K/L were wrong) ──────
+    group_fixes = {
+        "C": ("Brazil", "Morocco", "Haiti", "Scotland"),
+        "D": ("USA", "Paraguay", "Australia", "Turkey"),
+        "G": ("Belgium", "Egypt", "Iran", "New Zealand"),
+        "H": ("Spain", "Cape Verde", "Saudi Arabia", "Uruguay"),
+        "K": ("Portugal", "Uzbekistan", "Colombia", "DR Congo"),
+        "L": ("England", "Croatia", "Ghana", "Panama"),
+    }
+    for grp, teams in group_fixes.items():
+        placeholders = ", ".join(f"'{t}'" for t in teams)
+        try:
+            db.session.execute(db.text(
+                f"UPDATE matches SET group_name = '{grp}' WHERE home_team IN ({placeholders})"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # ── Fix duplicate Portugal vs Uzbekistan (June 17 should be Portugal vs DR Congo) ──
     # The seed file incorrectly had Portugal vs Uzbekistan twice (Jun 17 + Jun 23).
     # Fix: rename the lower-ID duplicate to Portugal vs DR Congo.

@@ -87,16 +87,16 @@ TEAM_FLAG_CODES = {
 GROUP_TEAMS = {
     "A": ["Mexico", "South Africa", "South Korea", "Czech Republic"],
     "B": ["Canada", "Bosnia and Herzegovina", "Qatar", "Switzerland"],
-    "C": ["USA", "Paraguay", "Australia", "Turkey"],
-    "D": ["Brazil", "Morocco", "Haiti", "Scotland"],
+    "C": ["Brazil", "Morocco", "Haiti", "Scotland"],
+    "D": ["USA", "Paraguay", "Australia", "Turkey"],
     "E": ["Germany", "Curaçao", "Ivory Coast", "Ecuador"],
     "F": ["Netherlands", "Japan", "Sweden", "Tunisia"],
-    "G": ["Spain", "Cape Verde", "Belgium", "Egypt"],
-    "H": ["Saudi Arabia", "Uruguay", "Iran", "New Zealand"],
+    "G": ["Belgium", "Egypt", "Iran", "New Zealand"],
+    "H": ["Spain", "Cape Verde", "Saudi Arabia", "Uruguay"],
     "I": ["France", "Senegal", "Iraq", "Norway"],
     "J": ["Argentina", "Algeria", "Austria", "Jordan"],
-    "K": ["England", "Croatia", "Ghana", "Panama"],
-    "L": ["Portugal", "Uzbekistan", "Colombia", "DR Congo"],
+    "K": ["Portugal", "Uzbekistan", "Colombia", "DR Congo"],
+    "L": ["England", "Croatia", "Ghana", "Panama"],
 }
 
 TEAM_TO_GROUP = {
