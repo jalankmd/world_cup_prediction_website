@@ -1347,6 +1347,24 @@ def admin_dashboard():
             flash(f"Entry fee for '{group.name}' set to {label}.", "success")
             return redirect(url_for("main.admin_dashboard"))
 
+        if form_action == "change_user_password":
+            user_id_raw = request.form.get("user_id", "")
+            new_password = request.form.get("new_password", "")
+            if not user_id_raw.isdigit():
+                flash("Invalid user.", "danger")
+                return redirect(url_for("main.admin_dashboard"))
+            if not new_password or len(new_password) < 4:
+                flash("Password must be at least 4 characters.", "danger")
+                return redirect(url_for("main.admin_dashboard"))
+            target = db.session.get(User, int(user_id_raw))
+            if not target or target.is_admin:
+                flash("User not found.", "danger")
+                return redirect(url_for("main.admin_dashboard"))
+            target.set_password(new_password)
+            db.session.commit()
+            flash(f"Password updated for {target.username}.", "success")
+            return redirect(url_for("main.admin_dashboard"))
+
         if form_action == "delete_group":
             group_id_raw = request.form.get("group_id", "")
             admin_password = request.form.get("admin_password", "")
@@ -1386,7 +1404,8 @@ def admin_dashboard():
             return redirect(url_for("main.admin_dashboard"))
 
     groups = Competition.query.order_by(Competition.name.asc()).all()
-    return render_template("admin_dashboard.html", groups=groups)
+    all_users = User.query.filter_by(is_admin=False).order_by(User.username.asc()).all()
+    return render_template("admin_dashboard.html", groups=groups, all_users=all_users)
 
 
 @bp.route("/admin/results", methods=["GET", "POST"])
