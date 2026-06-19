@@ -1048,6 +1048,238 @@ button:hover {
 }
 
 /* ===========================
+   Admin Edit Prediction Modal
+   =========================== */
+.edit-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.edit-modal-box {
+    background: white;
+    border-radius: 10px;
+    padding: 24px;
+    min-width: 300px;
+    max-width: 460px;
+    width: 90%;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+.edit-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.edit-modal-header h3 {
+    margin: 0;
+    font-size: 17px;
+    color: #2c3e50;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.modal-close-btn:hover { color: #333; }
+
+.modal-subtitle {
+    color: #555;
+    font-size: 13px;
+    margin: 0 0 16px;
+}
+
+.modal-match-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a3a5c;
+    margin: 0 0 14px;
+}
+
+.modal-field-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.modal-field-row label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    font-weight: 700;
+    color: #444;
+    gap: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.modal-field-row input[type="number"] {
+    width: 65px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 18px;
+    text-align: center;
+}
+
+.score-separator {
+    font-size: 22px;
+    color: #555;
+    padding-bottom: 8px;
+}
+
+.modal-field-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.modal-field-col label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    font-weight: 700;
+    color: #444;
+    gap: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.modal-field-col select {
+    padding: 7px 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.modal-radio-group {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.modal-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    background: #f5f7fa;
+    border: 1px solid #dde3ec;
+    border-radius: 6px;
+    padding: 7px 12px;
+    transition: background 0.15s, border-color 0.15s;
+    flex: 1;
+    justify-content: center;
+}
+
+.modal-radio-option input[type="radio"] { display: none; }
+
+.modal-radio-option.selected {
+    background: #dbeafe;
+    border-color: #3b82f6;
+    font-weight: 600;
+    color: #1e40af;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #eee;
+}
+
+.btn-save-pred {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 9px 22px;
+    border-radius: 5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-save-pred:hover { background: #219a52; }
+
+.btn-clear-pred {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-clear-pred:hover { background: #c0392b; }
+
+.btn-cancel-pred {
+    background: #ecf0f1;
+    color: #555;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: auto;
+}
+
+.btn-cancel-pred:hover { background: #dde; }
+
+.edit-pred-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    color: #aaa;
+    padding: 1px 4px;
+    border-radius: 3px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+    margin-left: 4px;
+}
+
+.pred-cell:hover .edit-pred-btn {
+    opacity: 1;
+}
+
+.edit-pred-btn:hover {
+    background: #e8f0fe;
+    color: #1a73e8;
+}
+
+/* podium tab edit button — always visible since it's in its own column */
+.podium-edit-col .edit-pred-btn {
+    opacity: 1;
+    font-size: 13px;
+    color: #666;
+}
+
+/* ===========================
    ET Live Clock
    =========================== */
 .et-clock-bar {

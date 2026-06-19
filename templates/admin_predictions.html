@@ -50,12 +50,6 @@
                     </thead>
                     <tbody>
                         {% for match in matches %}
-                            {% set row_has_any = namespace(value=false) %}
-                            {% for user in users %}
-                                {% if pred_map.get((user.id, match.id)) %}
-                                    {% set row_has_any.value = true %}
-                                {% endif %}
-                            {% endfor %}
                             <tr>
                                 <td class="col-kickoff">{{ match.match_date.strftime("%b %d") if match.match_date else "TBD" }}</td>
                                 <td>{{ match.home_team }} vs {{ match.away_team }}</td>
@@ -77,6 +71,17 @@
                                         {% else %}
                                             <span class="pred-empty">—</span>
                                         {% endif %}
+                                        <button type="button" class="edit-pred-btn"
+                                            data-pred-type="classic"
+                                            data-user-id="{{ user.id }}"
+                                            data-user-name="{{ user.username }}"
+                                            data-match-id="{{ match.id }}"
+                                            data-home-team="{{ match.home_team }}"
+                                            data-away-team="{{ match.away_team }}"
+                                            data-home-score="{{ pred.predicted_home_score if pred else '' }}"
+                                            data-away-score="{{ pred.predicted_away_score if pred else '' }}"
+                                            data-has-pred="{{ 'true' if pred else 'false' }}"
+                                            onclick="openEditModalFromBtn(this)" title="Edit prediction">&#9998;</button>
                                     </td>
                                 {% endfor %}
                             </tr>
@@ -124,6 +129,16 @@
                                         {% else %}
                                             <span class="pred-empty">—</span>
                                         {% endif %}
+                                        <button type="button" class="edit-pred-btn"
+                                            data-pred-type="odds"
+                                            data-user-id="{{ user.id }}"
+                                            data-user-name="{{ user.username }}"
+                                            data-match-id="{{ match.id }}"
+                                            data-home-team="{{ match.home_team }}"
+                                            data-away-team="{{ match.away_team }}"
+                                            data-outcome="{{ pred.predicted_outcome if pred else '' }}"
+                                            data-has-pred="{{ 'true' if pred else 'false' }}"
+                                            onclick="openEditModalFromBtn(this)" title="Edit prediction">&#9998;</button>
                                     </td>
                                 {% endfor %}
                             </tr>
@@ -157,6 +172,15 @@
                                         {% else %}
                                             <span class="pred-empty">—</span>
                                         {% endif %}
+                                        <button type="button" class="edit-pred-btn"
+                                            data-pred-type="qualifiers"
+                                            data-user-id="{{ user.id }}"
+                                            data-user-name="{{ user.username }}"
+                                            data-group-name="{{ group_name }}"
+                                            data-team-1="{{ pred.team_1 if pred else '' }}"
+                                            data-team-2="{{ pred.team_2 if pred else '' }}"
+                                            data-has-pred="{{ 'true' if pred else 'false' }}"
+                                            onclick="openEditModalFromBtn(this)" title="Edit prediction">&#9998;</button>
                                     </td>
                                 {% endfor %}
                             </tr>
@@ -177,6 +201,7 @@
                             <th>2nd Pick</th>
                             <th>3rd Pick</th>
                             <th>Points</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -192,6 +217,17 @@
                                 {% else %}
                                     <td colspan="4" class="pred-empty">No pick submitted</td>
                                 {% endif %}
+                                <td class="podium-edit-col">
+                                    <button type="button" class="edit-pred-btn"
+                                        data-pred-type="podium"
+                                        data-user-id="{{ user.id }}"
+                                        data-user-name="{{ user.username }}"
+                                        data-champion="{{ pred.champion_team if pred else '' }}"
+                                        data-runner-up="{{ pred.runner_up_team if pred else '' }}"
+                                        data-third="{{ pred.third_place_team if pred else '' }}"
+                                        data-has-pred="{{ 'true' if pred else 'false' }}"
+                                        onclick="openEditModalFromBtn(this)" title="Edit champion picks">&#9998; Edit</button>
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -206,4 +242,189 @@
 {% else %}
     <p class="meta-line">No groups found. Create a group first.</p>
 {% endif %}
+
+{# ── Edit Prediction Modal ─────────────────────────────────────────────── #}
+<div id="edit-modal" class="edit-modal-overlay" style="display:none;" onclick="handleOverlayClick(event)">
+    <div class="edit-modal-box">
+        <div class="edit-modal-header">
+            <h3 id="edit-modal-title">Edit Prediction</h3>
+            <button type="button" class="modal-close-btn" onclick="closeEditModal()">&times;</button>
+        </div>
+        <p class="modal-subtitle" id="edit-modal-subtitle"></p>
+        <p class="modal-match-label" id="edit-modal-match-label"></p>
+
+        <form method="POST" action="{{ url_for('main.admin_edit_user_prediction') }}" id="edit-modal-form">
+            <input type="hidden" name="pred_type" id="modal-pred-type">
+            <input type="hidden" name="user_id" id="modal-user-id">
+            <input type="hidden" name="competition_id" value="{{ selected_group_id }}">
+            <input type="hidden" name="match_id" id="modal-match-id">
+            <input type="hidden" name="group_name" id="modal-group-name">
+
+            {# Classic: score inputs #}
+            <div id="modal-classic-section" style="display:none;">
+                <div class="modal-field-row">
+                    <label>
+                        <span id="modal-home-team-label">Home</span>
+                        <input type="number" name="home_score" id="modal-home-score" min="0" max="20" value="0">
+                    </label>
+                    <span class="score-separator">&ndash;</span>
+                    <label>
+                        <span id="modal-away-team-label">Away</span>
+                        <input type="number" name="away_score" id="modal-away-score" min="0" max="20" value="0">
+                    </label>
+                </div>
+            </div>
+
+            {# Odds: outcome radio buttons #}
+            <div id="modal-odds-section" style="display:none;">
+                <div class="modal-radio-group" id="modal-radio-group">
+                    <label class="modal-radio-option" id="radio-home-label">
+                        <input type="radio" name="predicted_outcome" value="home" onchange="updateRadioStyles()">
+                        <span id="modal-odds-home-label">Home</span>
+                    </label>
+                    <label class="modal-radio-option" id="radio-draw-label">
+                        <input type="radio" name="predicted_outcome" value="draw" onchange="updateRadioStyles()">
+                        Draw
+                    </label>
+                    <label class="modal-radio-option" id="radio-away-label">
+                        <input type="radio" name="predicted_outcome" value="away" onchange="updateRadioStyles()">
+                        <span id="modal-odds-away-label">Away</span>
+                    </label>
+                </div>
+            </div>
+
+            {# Qualifiers: two team dropdowns #}
+            <div id="modal-qualifiers-section" style="display:none;">
+                <div class="modal-field-col">
+                    <label>Team 1 (top 2, any order)
+                        <select name="team_1" id="modal-team-1"></select>
+                    </label>
+                    <label>Team 2 (top 2, any order)
+                        <select name="team_2" id="modal-team-2"></select>
+                    </label>
+                </div>
+            </div>
+
+            {# Podium: champion / runner-up / third selects #}
+            <div id="modal-podium-section" style="display:none;">
+                <div class="modal-field-col">
+                    <label>Champion (1st pick)
+                        <select name="champion_team" id="modal-champion">
+                            {% for team in all_teams %}
+                                <option value="{{ team }}">{{ team }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>Runner-up (2nd pick)
+                        <select name="runner_up_team" id="modal-runner-up">
+                            {% for team in all_teams %}
+                                <option value="{{ team }}">{{ team }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>Third Place (3rd pick)
+                        <select name="third_place_team" id="modal-third">
+                            {% for team in all_teams %}
+                                <option value="{{ team }}">{{ team }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit" name="action" value="save" class="btn-save-pred">Save</button>
+                <button type="submit" name="action" value="delete" class="btn-clear-pred" id="modal-delete-btn" style="display:none;">Clear</button>
+                <button type="button" class="btn-cancel-pred" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const GROUP_TEAMS_DATA = {{ group_teams | tojson }};
+
+function openEditModalFromBtn(btn) {
+    const d = btn.dataset;
+    const predType = d.predType;
+
+    ['classic', 'odds', 'qualifiers', 'podium'].forEach(t => {
+        document.getElementById('modal-' + t + '-section').style.display = 'none';
+    });
+
+    document.getElementById('modal-pred-type').value = predType;
+    document.getElementById('modal-user-id').value = d.userId;
+    document.getElementById('edit-modal-subtitle').textContent = 'User: ' + d.userName;
+    document.getElementById('modal-delete-btn').style.display = d.hasPred === 'true' ? '' : 'none';
+
+    if (predType === 'classic') {
+        document.getElementById('edit-modal-title').textContent = 'Edit Score Prediction';
+        document.getElementById('edit-modal-match-label').textContent = d.homeTeam + ' vs ' + d.awayTeam;
+        document.getElementById('modal-match-id').value = d.matchId;
+        document.getElementById('modal-home-team-label').textContent = d.homeTeam;
+        document.getElementById('modal-away-team-label').textContent = d.awayTeam;
+        document.getElementById('modal-home-score').value = d.homeScore !== '' ? d.homeScore : 0;
+        document.getElementById('modal-away-score').value = d.awayScore !== '' ? d.awayScore : 0;
+        document.getElementById('modal-classic-section').style.display = '';
+
+    } else if (predType === 'odds') {
+        document.getElementById('edit-modal-title').textContent = 'Edit Odds Prediction';
+        document.getElementById('edit-modal-match-label').textContent = d.homeTeam + ' vs ' + d.awayTeam;
+        document.getElementById('modal-match-id').value = d.matchId;
+        document.getElementById('modal-odds-home-label').textContent = d.homeTeam;
+        document.getElementById('modal-odds-away-label').textContent = d.awayTeam;
+        document.querySelectorAll('input[name="predicted_outcome"]').forEach(r => {
+            r.checked = r.value === d.outcome;
+        });
+        updateRadioStyles();
+        document.getElementById('modal-odds-section').style.display = '';
+
+    } else if (predType === 'qualifiers') {
+        document.getElementById('edit-modal-title').textContent = 'Edit Group ' + d.groupName + ' Qualifier Picks';
+        document.getElementById('edit-modal-match-label').textContent = 'Group ' + d.groupName;
+        document.getElementById('modal-group-name').value = d.groupName;
+        const teams = GROUP_TEAMS_DATA[d.groupName] || [];
+        const sel1 = document.getElementById('modal-team-1');
+        const sel2 = document.getElementById('modal-team-2');
+        sel1.innerHTML = '';
+        sel2.innerHTML = '';
+        teams.forEach(t => {
+            sel1.add(new Option(t, t, false, t === d.team1));
+            sel2.add(new Option(t, t, false, t === d.team2));
+        });
+        document.getElementById('modal-qualifiers-section').style.display = '';
+
+    } else if (predType === 'podium') {
+        document.getElementById('edit-modal-title').textContent = 'Edit Champion Picks';
+        document.getElementById('edit-modal-match-label').textContent = '';
+        document.getElementById('modal-champion').value = d.champion || '';
+        document.getElementById('modal-runner-up').value = d.runnerUp || '';
+        document.getElementById('modal-third').value = d.third || '';
+        document.getElementById('modal-podium-section').style.display = '';
+    }
+
+    document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').style.display = 'none';
+}
+
+function handleOverlayClick(e) {
+    if (e.target === document.getElementById('edit-modal')) {
+        closeEditModal();
+    }
+}
+
+function updateRadioStyles() {
+    document.querySelectorAll('.modal-radio-option').forEach(label => {
+        const radio = label.querySelector('input[type="radio"]');
+        label.classList.toggle('selected', radio && radio.checked);
+    });
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeEditModal();
+});
+</script>
 {% endblock %}

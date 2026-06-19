@@ -1120,6 +1120,7 @@ def admin_predictions():
 
     all_matches = Match.query.order_by(Match.match_date).all()
     group_tabs = [{"value": str(g.id), "label": g.name} for g in groups]
+    all_teams = sorted({m.home_team for m in all_matches}.union({m.away_team for m in all_matches}))
 
     return render_template(
         "admin_predictions.html",
@@ -1131,7 +1132,149 @@ def admin_predictions():
         pred_tab=pred_tab,
         pred_map=pred_map,
         group_teams=GROUP_TEAMS,
+        all_teams=all_teams,
     )
+
+
+# ---------------------------
+# Admin Edit Any User's Prediction
+# ---------------------------
+@bp.route("/admin/edit_user_prediction", methods=["POST"])
+@login_required
+def admin_edit_user_prediction():
+    if not getattr(current_user, "is_admin", False):
+        return "Access denied", 403
+
+    pred_type = request.form.get("pred_type")
+    user_id = request.form.get("user_id", type=int)
+    competition_id = request.form.get("competition_id", type=int)
+    action = request.form.get("action", "save")
+
+    if pred_type not in {"classic", "odds", "qualifiers", "podium"} or not user_id or not competition_id:
+        flash("Invalid edit request.", "danger")
+        return redirect(url_for("main.admin_predictions"))
+
+    redirect_url = url_for("main.admin_predictions", group=competition_id, tab=pred_type)
+
+    target_user = db.session.get(User, user_id)
+    if not target_user or target_user.is_admin:
+        flash("User not found.", "danger")
+        return redirect(redirect_url)
+
+    try:
+        if pred_type == "classic":
+            match_id = request.form.get("match_id", type=int)
+            if not match_id:
+                flash("Match not specified.", "danger")
+                return redirect(redirect_url)
+            pred = Prediction.query.filter_by(user_id=user_id, match_id=match_id, competition_id=competition_id).first()
+            if action == "delete":
+                if pred:
+                    db.session.delete(pred)
+                    flash(f"Score prediction cleared for {target_user.username}.", "success")
+            else:
+                home_score = int(request.form["home_score"])
+                away_score = int(request.form["away_score"])
+                if pred:
+                    pred.predicted_home_score = home_score
+                    pred.predicted_away_score = away_score
+                    flash(f"Score prediction updated for {target_user.username}.", "success")
+                else:
+                    db.session.add(Prediction(
+                        user_id=user_id, match_id=match_id, competition_id=competition_id,
+                        predicted_home_score=home_score, predicted_away_score=away_score,
+                    ))
+                    flash(f"Score prediction created for {target_user.username}.", "success")
+
+        elif pred_type == "odds":
+            match_id = request.form.get("match_id", type=int)
+            if not match_id:
+                flash("Match not specified.", "danger")
+                return redirect(redirect_url)
+            pred = OddsPrediction.query.filter_by(user_id=user_id, match_id=match_id, competition_id=competition_id).first()
+            if action == "delete":
+                if pred:
+                    db.session.delete(pred)
+                    flash(f"Odds prediction cleared for {target_user.username}.", "success")
+            else:
+                outcome = (request.form.get("predicted_outcome") or "").lower()
+                if outcome not in {"home", "draw", "away"}:
+                    flash("Please select home, draw, or away.", "danger")
+                    return redirect(redirect_url)
+                if pred:
+                    pred.predicted_outcome = outcome
+                    flash(f"Odds prediction updated for {target_user.username}.", "success")
+                else:
+                    db.session.add(OddsPrediction(
+                        user_id=user_id, match_id=match_id, competition_id=competition_id,
+                        predicted_outcome=outcome,
+                    ))
+                    flash(f"Odds prediction created for {target_user.username}.", "success")
+
+        elif pred_type == "qualifiers":
+            group_name = (request.form.get("group_name") or "").strip().upper()
+            teams = GROUP_TEAMS.get(group_name)
+            if not teams:
+                flash("Invalid group.", "danger")
+                return redirect(redirect_url)
+            pred = GroupQualifierPrediction.query.filter_by(user_id=user_id, group_name=group_name, competition_id=competition_id).first()
+            if action == "delete":
+                if pred:
+                    db.session.delete(pred)
+                    flash(f"Qualifier prediction cleared for {target_user.username}.", "success")
+            else:
+                team_1 = (request.form.get("team_1") or "").strip()
+                team_2 = (request.form.get("team_2") or "").strip()
+                if team_1 not in teams or team_2 not in teams or team_1 == team_2:
+                    flash("Invalid team selection for qualifier picks.", "danger")
+                    return redirect(redirect_url)
+                if pred:
+                    pred.team_1 = team_1
+                    pred.team_2 = team_2
+                    flash(f"Qualifier prediction updated for {target_user.username}.", "success")
+                else:
+                    db.session.add(GroupQualifierPrediction(
+                        user_id=user_id, group_name=group_name, competition_id=competition_id,
+                        team_1=team_1, team_2=team_2,
+                    ))
+                    flash(f"Qualifier prediction created for {target_user.username}.", "success")
+
+        elif pred_type == "podium":
+            pred = PodiumPrediction.query.filter_by(user_id=user_id, competition_id=competition_id).first()
+            if action == "delete":
+                if pred:
+                    db.session.delete(pred)
+                    flash(f"Podium picks cleared for {target_user.username}.", "success")
+            else:
+                champion = (request.form.get("champion_team") or "").strip()
+                runner_up = (request.form.get("runner_up_team") or "").strip()
+                third = (request.form.get("third_place_team") or "").strip()
+                if not champion or not runner_up or not third or len({champion, runner_up, third}) != 3:
+                    flash("Champion, runner-up, and third place must be three different teams.", "danger")
+                    return redirect(redirect_url)
+                if pred:
+                    pred.champion_team = champion
+                    pred.runner_up_team = runner_up
+                    pred.third_place_team = third
+                    flash(f"Podium picks updated for {target_user.username}.", "success")
+                else:
+                    db.session.add(PodiumPrediction(
+                        user_id=user_id, competition_id=competition_id,
+                        champion_team=champion, runner_up_team=runner_up, third_place_team=third,
+                    ))
+                    flash(f"Podium picks created for {target_user.username}.", "success")
+
+        db.session.commit()
+        update_all_points()
+
+    except (ValueError, KeyError):
+        flash("Invalid form values.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash("Database error. Please try again.", "danger")
+        print(e)
+
+    return redirect(redirect_url)
 
 
 # ---------------------------
