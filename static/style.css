@@ -79,7 +79,7 @@ main {
 
 .home-container {
     text-align: center;
-    margin-top: 80px;
+    margin-top: 20px;
 }
 
 .home-container h1 {
@@ -89,8 +89,8 @@ main {
 
 .subtitle {
     font-size: 18px;
-    color: black;   /* Visible subtitle text */
-    margin-bottom: 30px;
+    color: black;
+    margin-bottom: 12px;
 }
 
 .home-hero-image-wrap {
@@ -1869,7 +1869,7 @@ button:hover {
    Champion Picks (Home Page)
    =========================== */
 .champion-picks-section {
-    margin-top: 32px;
+    margin-top: 16px;
     text-align: center;
 }
 
