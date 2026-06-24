@@ -203,8 +203,18 @@ setInterval(updateChecklistCountdowns, 1000);
                             {% set status = "locked" %}
                         {% endif %}
                         {% set pred = predictions.get(match.id) %}
+                        {% set ns = namespace(pred_class='') %}
+                        {% if status == 'finished' and pred %}
+                            {% if pred.predicted_home_score == match.home_score and pred.predicted_away_score == match.away_score %}
+                                {% set ns.pred_class = 'pred-exact' %}
+                            {% elif (pred.predicted_home_score > pred.predicted_away_score and match.home_score > match.away_score) or (pred.predicted_home_score < pred.predicted_away_score and match.home_score < match.away_score) or (pred.predicted_home_score == pred.predicted_away_score and match.home_score == match.away_score) %}
+                                {% set ns.pred_class = 'pred-outcome' %}
+                            {% else %}
+                                {% set ns.pred_class = 'pred-wrong' %}
+                            {% endif %}
+                        {% endif %}
 
-                        <tr class="match-row {{ status }}">
+                        <tr class="match-row {{ status }} {{ ns.pred_class }}">
                             <td class="col-kickoff">{{ match.match_date | to_et }}</td>
                             <td>
                                 <span class="team-with-flag">
@@ -394,8 +404,17 @@ setInterval(updateChecklistCountdowns, 1000);
                             {% set status = "locked" %}
                         {% endif %}
                         {% set pred = odds_predictions.get(match.id) %}
+                        {% set ns = namespace(pred_class='') %}
+                        {% if status == 'finished' and pred %}
+                            {% set actual_out = 'home' if match.home_score > match.away_score else ('away' if match.home_score < match.away_score else 'draw') %}
+                            {% if pred.predicted_outcome == actual_out %}
+                                {% set ns.pred_class = 'pred-exact' %}
+                            {% else %}
+                                {% set ns.pred_class = 'pred-wrong' %}
+                            {% endif %}
+                        {% endif %}
 
-                        <tr class="match-row {{ status }}">
+                        <tr class="match-row {{ status }} {{ ns.pred_class }}">
                             <td class="col-kickoff">{{ match.match_date | to_et }}</td>
                             <td>{{ match.home_team }}</td>
                             <td>{{ match.away_team }}</td>

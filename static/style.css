@@ -343,6 +343,18 @@ button:hover {
     background: #eefaf0;
 }
 
+.match-row.pred-exact {
+    background: #c8f0d0;
+}
+
+.match-row.pred-outcome {
+    background: #fff3cd;
+}
+
+.match-row.pred-wrong {
+    background: #fad7da;
+}
+
 .prediction-inline-form {
     display: inline-flex;
     align-items: center;
