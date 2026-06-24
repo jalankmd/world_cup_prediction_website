@@ -26,5 +26,122 @@
     {% else %}
         <a href="{{ url_for('main.matches') }}" class="btn-primary">View Matches</a>
     {% endif %}
+
+    {% if current_user.is_authenticated and not current_user.is_admin and podium_picks %}
+    <div class="champion-picks-section">
+        <h3 class="champion-picks-title">⭐ Your Champion Picks</h3>
+        <div class="champion-picks-row">
+
+            {% set picks = [
+                (podium_picks.champion_team,   '🥇', '1st Pick', '10 pts'),
+                (podium_picks.runner_up_team,  '🥈', '2nd Pick', '6 pts'),
+                (podium_picks.third_place_team,'🥉', '3rd Pick', '3 pts'),
+            ] %}
+            {% for team, medal, rank, pts in picks %}
+            {% set is_celebrating = team in celebrating_teams %}
+            <div class="champion-pick-card pick-{{ loop.index }}{% if is_celebrating %} celebrating{% endif %}">
+                <div class="pick-medal">{{ medal }}</div>
+                <div class="pick-rank">{{ rank }} &middot; <span class="pick-pts">{{ pts }}</span></div>
+                {% if team_flag_codes.get(team) %}
+                    <img class="pick-flag" src="https://flagcdn.com/80x60/{{ team_flag_codes.get(team) }}.png" alt="{{ team }} flag">
+                {% endif %}
+                <div class="pick-team">{{ team }}</div>
+                {% if is_celebrating %}
+                    <div class="pick-win-badge">🔥 On fire!</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+    {% endif %}
+
 </div>
+
+{# ── Celebration overlay ─────────────────────────────────────────── #}
+<canvas id="confetti-canvas"></canvas>
+<div id="celebration-banner">
+    <span id="celebration-msg"></span>
+</div>
+
+{% if current_user.is_authenticated and not current_user.is_admin %}
+<script>
+(function () {
+    var teams = {{ celebrating_teams | tojson }};
+    if (!teams.length) return;
+
+    var storageKey = 'celebShown_' + teams.slice().sort().join('_');
+    if (sessionStorage.getItem(storageKey)) return;
+    sessionStorage.setItem(storageKey, '1');
+
+    // Banner
+    var banner = document.getElementById('celebration-banner');
+    var msgEl  = document.getElementById('celebration-msg');
+    if (banner && msgEl) {
+        var teamStr = teams.length === 1
+            ? teams[0]
+            : teams.slice(0, -1).join(', ') + ' & ' + teams[teams.length - 1];
+        msgEl.textContent = '🎉 ' + teamStr + (teams.length === 1 ? ' is' : ' are') + ' looking strong — your picks are alive!';
+        banner.style.display = 'block';
+        setTimeout(function () {
+            banner.style.opacity = '0';
+            setTimeout(function () { banner.style.display = 'none'; }, 600);
+        }, 5500);
+    }
+
+    // Confetti
+    var canvas = document.getElementById('confetti-canvas');
+    if (!canvas) return;
+    canvas.style.display = 'block';
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var ctx = canvas.getContext('2d');
+    var colors = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#ffffff', '#fbbf24'];
+    var particles = [];
+    for (var i = 0; i < 160; i++) {
+        particles.push({
+            x:     Math.random() * canvas.width,
+            y:     Math.random() * -canvas.height * 0.6,
+            w:     Math.random() * 10 + 5,
+            h:     Math.random() * 6  + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            speed: Math.random() * 3  + 1.5,
+            drift: (Math.random() - 0.5) * 1.8,
+            angle: Math.random() * Math.PI * 2,
+            spin:  (Math.random() - 0.5) * 0.14,
+        });
+    }
+    var start    = Date.now();
+    var duration = 5500;
+    function draw() {
+        var elapsed = Date.now() - start;
+        if (elapsed > duration) {
+            canvas.style.transition = 'opacity 0.8s';
+            canvas.style.opacity = '0';
+            setTimeout(function () {
+                canvas.style.display = 'none';
+                canvas.style.opacity = '1';
+                canvas.style.transition = '';
+            }, 800);
+            return;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(function (p) {
+            p.y += p.speed;
+            p.x += p.drift;
+            p.angle += p.spin;
+            if (p.y > canvas.height) { p.y = -20; p.x = Math.random() * canvas.width; }
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+        });
+        requestAnimationFrame(draw);
+    }
+    draw();
+}());
+</script>
+{% endif %}
 {% endblock %}

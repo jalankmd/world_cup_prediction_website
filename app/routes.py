@@ -226,10 +226,61 @@ def _save_rank_snapshots():
 @bp.route("/")
 def home():
     signup_open = _utc_now_naive() < SIGNUP_DEADLINE_UTC
+
+    podium_picks = None
+    celebrating_teams = []
+
+    if current_user.is_authenticated and not current_user.is_admin:
+        comp_id = current_user.competition_id
+        if comp_id:
+            podium_picks = PodiumPrediction.query.filter_by(
+                user_id=current_user.id, competition_id=comp_id
+            ).first()
+        if not podium_picks:
+            for comp in current_user.competitions:
+                podium_picks = PodiumPrediction.query.filter_by(
+                    user_id=current_user.id, competition_id=comp.id
+                ).first()
+                if podium_picks:
+                    break
+
+        if podium_picks:
+            pick_teams = [
+                podium_picks.champion_team,
+                podium_picks.runner_up_team,
+                podium_picks.third_place_team,
+            ]
+            qualified_teams = set()
+            for r in GroupResult.query.all():
+                if r.qualified_team_1:
+                    qualified_teams.add(r.qualified_team_1)
+                if r.qualified_team_2:
+                    qualified_teams.add(r.qualified_team_2)
+
+            for team in pick_teams:
+                recent = (
+                    Match.query.filter(
+                        (Match.home_team == team) | (Match.away_team == team),
+                        Match.home_score.isnot(None),
+                        Match.away_score.isnot(None),
+                    )
+                    .order_by(Match.match_date.desc())
+                    .first()
+                )
+                won = recent and (
+                    (recent.home_team == team and recent.home_score > recent.away_score) or
+                    (recent.away_team == team and recent.away_score > recent.home_score)
+                )
+                if won or team in qualified_teams:
+                    celebrating_teams.append(team)
+
     return render_template(
         "home.html",
         signup_open=signup_open,
         signup_deadline_display=SIGNUP_DEADLINE_DISPLAY,
+        podium_picks=podium_picks,
+        celebrating_teams=celebrating_teams,
+        team_flag_codes=TEAM_FLAG_CODES,
     )
 
 
