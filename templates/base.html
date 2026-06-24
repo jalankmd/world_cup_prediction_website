@@ -87,6 +87,25 @@ function toggleDropdown(e, el) {
         }
     });
 }
+
+// Set correct left offsets for frozen columns in every .matches-table on the page
+(function() {
+    document.querySelectorAll('.matches-table').forEach(function(table) {
+        var hdrCells = table.querySelectorAll('thead tr:first-child th');
+        if (!hdrCells.length) return;
+        var numFreeze = Math.min(3, hdrCells.length);
+        var offsets = [0];
+        for (var i = 0; i < numFreeze - 1; i++) {
+            offsets.push(offsets[i] + hdrCells[i].offsetWidth);
+        }
+        table.querySelectorAll('tr').forEach(function(row) {
+            var cells = row.querySelectorAll('th, td');
+            for (var i = 0; i < numFreeze; i++) {
+                if (cells[i]) cells[i].style.left = offsets[i] + 'px';
+            }
+        });
+    });
+})();
 </script>
 </body>
 </html>
