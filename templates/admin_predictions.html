@@ -36,7 +36,7 @@
 
         {# ── Score Predictions ─────────────────────────────────────────── #}
         {% if pred_tab == 'classic' %}
-            <div class="matches-table-wrap">
+            <div class="matches-table-wrap group-pred-wrap">
                 <table class="matches-table admin-pred-table">
                     <thead>
                         <tr>
@@ -92,7 +92,7 @@
 
         {# ── Odds Predictions ──────────────────────────────────────────── #}
         {% elif pred_tab == 'odds' %}
-            <div class="matches-table-wrap">
+            <div class="matches-table-wrap group-pred-wrap">
                 <table class="matches-table admin-pred-table">
                     <thead>
                         <tr>
@@ -149,7 +149,7 @@
 
         {# ── Group Qualifier Predictions ───────────────────────────────── #}
         {% elif pred_tab == 'qualifiers' %}
-            <div class="matches-table-wrap">
+            <div class="matches-table-wrap group-pred-wrap">
                 <table class="matches-table admin-pred-table">
                     <thead>
                         <tr>
@@ -192,7 +192,7 @@
         {# ── Champion Picks ──────────────────────────────────────────────── #}
         {% elif pred_tab == 'podium' %}
             <p class="meta-line">Each user picks 3 teams they think will win the World Cup. 1st pick = 10 pts, 2nd = 6 pts, 3rd = 3 pts if it matches the champion.</p>
-            <div class="matches-table-wrap">
+            <div class="matches-table-wrap group-pred-wrap">
                 <table class="matches-table admin-pred-table">
                     <thead>
                         <tr>
