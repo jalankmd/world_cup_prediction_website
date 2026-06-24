@@ -483,6 +483,15 @@ button:hover {
     padding: 0 24px;
 }
 
+.current-user-row {
+    background: #fff5f5;
+}
+
+.current-user-name {
+    color: #c0392b;
+    font-weight: 700;
+}
+
 .leaderboard-panel:first-child {
     border-right: 2px solid #d7dde5;
     padding-left: 0;

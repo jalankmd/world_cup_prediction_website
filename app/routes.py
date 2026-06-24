@@ -163,7 +163,7 @@ def _t1_points_for_competition(user, competition_id):
 
 def _t2_points_for_competition(user, competition_id):
     """Sum Tournament 2 points for a user scoped to a specific competition."""
-    return int(round(sum(p.points for p in user.odds_predictions if p.competition_id == competition_id)))
+    return round(sum(p.points for p in user.odds_predictions if p.competition_id == competition_id), 1)
 
 
 def _assign_ranks(users_sorted, points_dict):
@@ -198,8 +198,8 @@ def _save_rank_snapshots():
             continue
         t1_pts = {u.id: _t1_points_for_competition(u, comp.id) for u in members}
         t2_pts = {u.id: _t2_points_for_competition(u, comp.id) for u in members}
-        classic_sorted = sorted(members, key=lambda u: t1_pts[u.id], reverse=True)
-        odds_sorted   = sorted(members, key=lambda u: t2_pts[u.id], reverse=True)
+        classic_sorted = sorted(members, key=lambda u: (-t1_pts[u.id], u.username.lower()))
+        odds_sorted   = sorted(members, key=lambda u: (-t2_pts[u.id], u.username.lower()))
         t1_ranks = _assign_ranks(classic_sorted, t1_pts)
         t2_ranks = _assign_ranks(odds_sorted,    t2_pts)
         for u in members:
@@ -1022,16 +1022,19 @@ def progress():
 
     selected_comp = next(c for c in user_comps if c.id == selected_comp_id)
 
-    snapshots = RankSnapshot.query.filter_by(
-        user_id=current_user.id, competition_id=selected_comp_id
-    ).order_by(RankSnapshot.snapshot_date).all()
+    snapshots = [
+        s for s in RankSnapshot.query.filter_by(
+            user_id=current_user.id, competition_id=selected_comp_id
+        ).order_by(RankSnapshot.snapshot_date).all()
+        if s.t1_points > 0 or float(s.t2_points) > 0
+    ]
 
     members = [u for u in selected_comp.members if not u.is_admin]
     total_members = len(members)
     t1_pts = {u.id: _t1_points_for_competition(u, selected_comp_id) for u in members}
     t2_pts = {u.id: _t2_points_for_competition(u, selected_comp_id) for u in members}
-    classic_sorted = sorted(members, key=lambda u: t1_pts[u.id], reverse=True)
-    odds_sorted    = sorted(members, key=lambda u: t2_pts[u.id], reverse=True)
+    classic_sorted = sorted(members, key=lambda u: (-t1_pts[u.id], u.username.lower()))
+    odds_sorted    = sorted(members, key=lambda u: (-t2_pts[u.id], u.username.lower()))
     t1_ranks_now = _assign_ranks(classic_sorted, t1_pts)
     t2_ranks_now = _assign_ranks(odds_sorted, t2_pts)
 
@@ -1167,8 +1170,8 @@ def leaderboard():
                 t1_points = {u.id: u.tournament1_points for u in users}
                 t2_points = {u.id: u.tournament2_points for u in users}
 
-        classic_users = sorted(users, key=lambda u: t1_points[u.id], reverse=True)
-        odds_users = sorted(users, key=lambda u: t2_points[u.id], reverse=True)
+        classic_users = sorted(users, key=lambda u: (-t1_points[u.id], u.username.lower()))
+        odds_users = sorted(users, key=lambda u: (-t2_points[u.id], u.username.lower()))
         t1_ranks = _assign_ranks(classic_users, t1_points)
         t2_ranks = _assign_ranks(odds_users, t2_points)
         return render_template(
