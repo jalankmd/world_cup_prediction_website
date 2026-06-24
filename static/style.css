@@ -1716,6 +1716,46 @@ button:hover {
     color: #9aaab8;
 }
 
+.progress-compare-bar {
+    margin: 8px 0 4px;
+}
+
+.progress-compare-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.progress-compare-form label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #435566;
+}
+
+.progress-compare-form select {
+    padding: 6px 10px;
+    border: 1px solid #c8d5e0;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.progress-clear-compare {
+    font-size: 12px;
+    color: #6b8097;
+    text-decoration: none;
+    padding: 4px 8px;
+    border: 1px solid #c8d5e0;
+    border-radius: 4px;
+}
+
+.progress-clear-compare:hover {
+    background: #f0f4f8;
+    color: #435566;
+}
+
 .progress-chart-wrap {
     margin: 20px 0;
     background: #fff;

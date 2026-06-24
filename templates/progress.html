@@ -21,7 +21,8 @@
         <div class="progress-stat-rank">Rank {{ current_t1_rank }} of {{ total_members }}</div>
         <div class="progress-stat-accuracy">
             {% if t1_accuracy is not none %}
-                Outcome accuracy: <strong>{{ t1_accuracy }}%</strong> <span class="accuracy-detail">({{ t1_correct }}/{{ t1_total }})</span>
+                Outcome accuracy: <strong>{{ t1_accuracy }}%</strong> <span class="accuracy-detail">({{ t1_correct }}/{{ t1_total }})</span><br>
+                Score accuracy: <strong>{{ t1_score_accuracy }}%</strong> <span class="accuracy-detail">({{ t1_score_correct }}/{{ t1_total }})</span>
             {% else %}
                 Outcome accuracy: <span class="accuracy-detail">no results yet</span>
             {% endif %}
@@ -31,7 +32,7 @@
     {% if include_t2 %}
     <div class="progress-stat-card">
         <div class="progress-stat-label">Comp 2 Points</div>
-        <div class="progress-stat-value">{{ "%.2f"|format(current_t2) }}</div>
+        <div class="progress-stat-value">{{ "%.1f"|format(current_t2) }}</div>
         <div class="progress-stat-rank">Rank {{ current_t2_rank }} of {{ total_members }}</div>
         <div class="progress-stat-accuracy">
             {% if t2_accuracy is not none %}
@@ -44,6 +45,28 @@
     {% endif %}
 </div>
 
+{% if other_members %}
+<div class="progress-compare-bar">
+    <form method="GET" action="{{ url_for('main.progress') }}" class="progress-compare-form">
+        {% if selected_comp_id and group_tabs %}
+            <input type="hidden" name="group" value="{{ selected_comp_id }}">
+        {% endif %}
+        <label for="compare-user-select">Compare with:</label>
+        <select name="compare_user" id="compare-user-select" onchange="this.form.submit()">
+            <option value="">— nobody —</option>
+            {% for member in other_members %}
+                <option value="{{ member.id }}" {% if compare_user and compare_user.id == member.id %}selected{% endif %}>
+                    {{ member.username }}
+                </option>
+            {% endfor %}
+        </select>
+        {% if compare_user %}
+            <a href="{{ url_for('main.progress', group=selected_comp_id) }}" class="progress-clear-compare">✕ Clear</a>
+        {% endif %}
+    </form>
+</div>
+{% endif %}
+
 {% if has_data %}
 <div class="progress-chart-wrap">
     <canvas id="rankChart"></canvas>
@@ -51,11 +74,13 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 var data = {{ chart_data | safe }};
+var myName = {{ current_user.username | tojson }};
+var cmpName = {{ (compare_user.username if compare_user else '') | tojson }};
 var ctx = document.getElementById('rankChart').getContext('2d');
 var datasets = [];
 {% if include_t1 %}
 datasets.push({
-    label: 'Comp 1 Rank',
+    label: 'Comp 1 — ' + myName,
     data: data.t1_rank,
     borderColor: '#0b5ed7',
     backgroundColor: 'rgba(11,94,215,0.08)',
@@ -63,11 +88,12 @@ datasets.push({
     fill: false,
     pointRadius: 5,
     pointHoverRadius: 7,
+    spanGaps: true,
 });
 {% endif %}
 {% if include_t2 %}
 datasets.push({
-    label: 'Comp 2 Rank',
+    label: 'Comp 2 — ' + myName,
     data: data.t2_rank,
     borderColor: '#e67e22',
     backgroundColor: 'rgba(230,126,34,0.08)',
@@ -75,7 +101,38 @@ datasets.push({
     fill: false,
     pointRadius: 5,
     pointHoverRadius: 7,
+    spanGaps: true,
 });
+{% endif %}
+{% if compare_user %}
+{% if include_t1 %}
+datasets.push({
+    label: 'Comp 1 — ' + cmpName,
+    data: data.cmp_t1_rank,
+    borderColor: '#0b5ed7',
+    backgroundColor: 'rgba(11,94,215,0.04)',
+    borderDash: [6, 4],
+    tension: 0.3,
+    fill: false,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    spanGaps: true,
+});
+{% endif %}
+{% if include_t2 %}
+datasets.push({
+    label: 'Comp 2 — ' + cmpName,
+    data: data.cmp_t2_rank,
+    borderColor: '#e67e22',
+    backgroundColor: 'rgba(230,126,34,0.04)',
+    borderDash: [6, 4],
+    tension: 0.3,
+    fill: false,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    spanGaps: true,
+});
+{% endif %}
 {% endif %}
 new Chart(ctx, {
     type: 'line',
@@ -97,10 +154,13 @@ new Chart(ctx, {
                 callbacks: {
                     afterLabel: function(ctx) {
                         var i = ctx.dataIndex;
-                        if (ctx.dataset.label.includes('Comp 1')) {
-                            return 'Points: ' + data.t1_points[i];
+                        var lbl = ctx.dataset.label || '';
+                        if (lbl.startsWith('Comp 1')) {
+                            var pts = lbl.includes(myName) ? data.t1_points[i] : (data.cmp_t1_points ? data.cmp_t1_points[i] : null);
+                            return pts != null ? 'Points: ' + pts : '';
                         }
-                        return 'Points: ' + data.t2_points[i];
+                        var pts = lbl.includes(myName) ? data.t2_points[i] : (data.cmp_t2_points ? data.cmp_t2_points[i] : null);
+                        return pts != null ? 'Points: ' + pts : '';
                     }
                 }
             },

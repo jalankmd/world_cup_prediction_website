@@ -1048,7 +1048,12 @@ def progress():
         1 for p in classic_finished
         if _match_outcome(p.predicted_home_score, p.predicted_away_score) == _match_outcome(p.match.home_score, p.match.away_score)
     )
+    t1_score_correct = sum(
+        1 for p in classic_finished
+        if p.predicted_home_score == p.match.home_score and p.predicted_away_score == p.match.away_score
+    )
     t1_accuracy = round(t1_correct / t1_total * 100) if t1_total else None
+    t1_score_accuracy = round(t1_score_correct / t1_total * 100) if t1_total else None
 
     odds_finished = [
         p for p in OddsPrediction.query.filter_by(user_id=current_user.id, competition_id=selected_comp_id).all()
@@ -1061,13 +1066,37 @@ def progress():
     )
     t2_accuracy = round(t2_correct / t2_total * 100) if t2_total else None
 
+    # Compare user (optional)
+    compare_user_id = request.args.get("compare_user", type=int)
+    compare_user = None
+    compare_snap_map = {}
+    other_members = [u for u in members if u.id != current_user.id]
+
+    if compare_user_id and compare_user_id != current_user.id:
+        compare_user = next((u for u in other_members if u.id == compare_user_id), None)
+        if compare_user:
+            compare_snap_map = {
+                s.snapshot_date: s
+                for s in RankSnapshot.query.filter_by(
+                    user_id=compare_user_id, competition_id=selected_comp_id
+                ).order_by(RankSnapshot.snapshot_date).all()
+                if s.t1_points > 0 or float(s.t2_points) > 0
+            }
+
     import json
+    my_snap_map = {s.snapshot_date: s for s in snapshots}
+    all_dates = sorted(set(my_snap_map.keys()) | set(compare_snap_map.keys()))
+
     chart_data = json.dumps({
-        "labels":    [s.snapshot_date.strftime("%b %d") for s in snapshots],
-        "t1_rank":   [s.t1_rank   for s in snapshots],
-        "t2_rank":   [s.t2_rank   for s in snapshots],
-        "t1_points": [s.t1_points for s in snapshots],
-        "t2_points": [round(float(s.t2_points), 2) for s in snapshots],
+        "labels":    [d.strftime("%b %d") for d in all_dates],
+        "t1_rank":   [my_snap_map[d].t1_rank   if d in my_snap_map else None for d in all_dates],
+        "t2_rank":   [my_snap_map[d].t2_rank   if d in my_snap_map else None for d in all_dates],
+        "t1_points": [my_snap_map[d].t1_points  if d in my_snap_map else None for d in all_dates],
+        "t2_points": [round(float(my_snap_map[d].t2_points), 2) if d in my_snap_map else None for d in all_dates],
+        "cmp_t1_rank":   [compare_snap_map[d].t1_rank   if d in compare_snap_map else None for d in all_dates] if compare_user else None,
+        "cmp_t2_rank":   [compare_snap_map[d].t2_rank   if d in compare_snap_map else None for d in all_dates] if compare_user else None,
+        "cmp_t1_points": [compare_snap_map[d].t1_points  if d in compare_snap_map else None for d in all_dates] if compare_user else None,
+        "cmp_t2_points": [round(float(compare_snap_map[d].t2_points), 2) if d in compare_snap_map else None for d in all_dates] if compare_user else None,
     })
 
     group_tabs = [{"value": str(c.id), "label": c.name} for c in user_comps] if len(user_comps) > 1 else []
@@ -1075,7 +1104,7 @@ def progress():
     return render_template(
         "progress.html",
         chart_data=chart_data,
-        has_data=len(snapshots) > 0,
+        has_data=len(all_dates) > 0,
         total_members=total_members,
         selected_comp=selected_comp,
         selected_comp_id=str(selected_comp_id),
@@ -1087,11 +1116,15 @@ def progress():
         current_t1_rank=t1_ranks_now.get(current_user.id, 0),
         current_t2_rank=t2_ranks_now.get(current_user.id, 0),
         t1_accuracy=t1_accuracy,
+        t1_score_accuracy=t1_score_accuracy,
         t2_accuracy=t2_accuracy,
         t1_correct=t1_correct,
+        t1_score_correct=t1_score_correct,
         t1_total=t1_total,
         t2_correct=t2_correct,
         t2_total=t2_total,
+        other_members=other_members,
+        compare_user=compare_user,
     )
 
 
