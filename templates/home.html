@@ -5,28 +5,6 @@
     <h1>Welcome to World Cup Predictor!</h1>
     <p class="subtitle">Predict match results and compete on the leaderboard.</p>
 
-    <div class="home-hero-image-wrap">
-        <img src="{{ url_for('static', filename='home-hero-2026.png') }}" alt="World Cup 2026" class="home-hero-image">
-    </div>
-
-    {% if not current_user.is_authenticated %}
-        {% if signup_open %}
-            <div class="signup-deadline-banner">
-                Registration closes <strong>{{ signup_deadline_display }}</strong>. Sign up before it's too late!
-            </div>
-            <a href="{{ url_for('main.login') }}" class="btn-secondary">Login</a>
-            <a href="{{ url_for('main.register') }}" class="btn-primary">Register</a>
-        {% else %}
-            <div class="signup-closed-banner">
-                Sign-up is now closed.
-                To request access, please contact the site owner.
-            </div>
-            <a href="{{ url_for('main.login') }}" class="btn-secondary">Login</a>
-        {% endif %}
-    {% else %}
-        <a href="{{ url_for('main.matches') }}" class="btn-primary">View Matches</a>
-    {% endif %}
-
     {% if current_user.is_authenticated and not current_user.is_admin and podium_picks %}
     <div class="champion-picks-section">
         <h3 class="champion-picks-title">⭐ Your Champion Picks</h3>
@@ -51,6 +29,28 @@
 
         </div>
     </div>
+    {% endif %}
+
+    <div class="home-hero-image-wrap">
+        <img src="{{ url_for('static', filename='home-hero-2026.png') }}" alt="World Cup 2026" class="home-hero-image">
+    </div>
+
+    {% if not current_user.is_authenticated %}
+        {% if signup_open %}
+            <div class="signup-deadline-banner">
+                Registration closes <strong>{{ signup_deadline_display }}</strong>. Sign up before it's too late!
+            </div>
+            <a href="{{ url_for('main.login') }}" class="btn-secondary">Login</a>
+            <a href="{{ url_for('main.register') }}" class="btn-primary">Register</a>
+        {% else %}
+            <div class="signup-closed-banner">
+                Sign-up is now closed.
+                To request access, please contact the site owner.
+            </div>
+            <a href="{{ url_for('main.login') }}" class="btn-secondary">Login</a>
+        {% endif %}
+    {% else %}
+        <a href="{{ url_for('main.matches') }}" class="btn-primary">View Matches</a>
     {% endif %}
 
 </div>
