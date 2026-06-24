@@ -68,107 +68,98 @@
 {% endif %}
 
 {% if has_data %}
-<div class="progress-chart-wrap">
-    <canvas id="rankChart"></canvas>
-</div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 var data = {{ chart_data | safe }};
 var myName = {{ current_user.username | tojson }};
 var cmpName = {{ (compare_user.username if compare_user else '') | tojson }};
-var ctx = document.getElementById('rankChart').getContext('2d');
-var datasets = [];
-{% if include_t1 %}
-datasets.push({
-    label: 'Comp 1 — ' + myName,
-    data: data.t1_rank,
-    borderColor: '#0b5ed7',
-    backgroundColor: 'rgba(11,94,215,0.08)',
-    tension: 0.3,
-    fill: false,
-    pointRadius: 5,
-    pointHoverRadius: 7,
-    spanGaps: true,
-});
-{% endif %}
-{% if include_t2 %}
-datasets.push({
-    label: 'Comp 2 — ' + myName,
-    data: data.t2_rank,
-    borderColor: '#e67e22',
-    backgroundColor: 'rgba(230,126,34,0.08)',
-    tension: 0.3,
-    fill: false,
-    pointRadius: 5,
-    pointHoverRadius: 7,
-    spanGaps: true,
-});
-{% endif %}
-{% if compare_user %}
-{% if include_t1 %}
-datasets.push({
-    label: 'Comp 1 — ' + cmpName,
-    data: data.cmp_t1_rank,
-    borderColor: '#0b5ed7',
-    backgroundColor: 'rgba(11,94,215,0.04)',
-    borderDash: [6, 4],
-    tension: 0.3,
-    fill: false,
-    pointRadius: 4,
-    pointHoverRadius: 6,
-    spanGaps: true,
-});
-{% endif %}
-{% if include_t2 %}
-datasets.push({
-    label: 'Comp 2 — ' + cmpName,
-    data: data.cmp_t2_rank,
-    borderColor: '#e67e22',
-    backgroundColor: 'rgba(230,126,34,0.04)',
-    borderDash: [6, 4],
-    tension: 0.3,
-    fill: false,
-    pointRadius: 4,
-    pointHoverRadius: 6,
-    spanGaps: true,
-});
-{% endif %}
-{% endif %}
-new Chart(ctx, {
-    type: 'line',
-    data: { labels: data.labels, datasets: datasets },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                reverse: true,
-                min: 1,
-                max: {{ total_members }},
-                ticks: { stepSize: 1, precision: 0 },
-                title: { display: true, text: 'Rank (1 = best)' }
-            },
-            x: { title: { display: true, text: 'Date' } }
-        },
-        plugins: {
-            tooltip: {
-                callbacks: {
-                    afterLabel: function(ctx) {
-                        var i = ctx.dataIndex;
-                        var lbl = ctx.dataset.label || '';
-                        if (lbl.startsWith('Comp 1')) {
-                            var pts = lbl.includes(myName) ? data.t1_points[i] : (data.cmp_t1_points ? data.cmp_t1_points[i] : null);
-                            return pts != null ? 'Points: ' + pts : '';
-                        }
-                        var pts = lbl.includes(myName) ? data.t2_points[i] : (data.cmp_t2_points ? data.cmp_t2_points[i] : null);
-                        return pts != null ? 'Points: ' + pts : '';
-                    }
-                }
-            },
-            legend: { position: 'top' }
-        }
+var totalMembers = {{ total_members }};
+
+function makeChart(canvasId, myRanks, myPoints, cmpRanks, cmpPoints, title) {
+    var ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    var datasets = [{
+        label: myName,
+        data: myRanks,
+        borderColor: '#0b5ed7',
+        backgroundColor: 'rgba(11,94,215,0.08)',
+        tension: 0.3,
+        fill: false,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        spanGaps: true,
+    }];
+    if (cmpRanks) {
+        datasets.push({
+            label: cmpName,
+            data: cmpRanks,
+            borderColor: '#0b5ed7',
+            backgroundColor: 'rgba(11,94,215,0.04)',
+            borderDash: [6, 4],
+            tension: 0.3,
+            fill: false,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            spanGaps: true,
+        });
     }
-});
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels: data.labels, datasets: datasets },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    reverse: true,
+                    min: 1,
+                    max: totalMembers,
+                    ticks: { stepSize: 1, precision: 0 },
+                    title: { display: true, text: 'Rank (1 = best)' }
+                },
+                x: { title: { display: true, text: 'Date' } }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(ctx) {
+                            var i = ctx.dataIndex;
+                            var pts = (ctx.datasetIndex === 0 ? myPoints : cmpPoints);
+                            return pts && pts[i] != null ? 'Points: ' + pts[i] : '';
+                        }
+                    }
+                },
+                legend: { position: 'top' },
+                title: { display: true, text: title, font: { size: 14 } }
+            }
+        }
+    });
+}
 </script>
+
+{% if include_t1 %}
+<div class="progress-chart-wrap">
+    <canvas id="chart1"></canvas>
+</div>
+<script>
+makeChart('chart1', data.t1_rank, data.t1_points,
+    {{ 'data.cmp_t1_rank' if compare_user else 'null' }},
+    {{ 'data.cmp_t1_points' if compare_user else 'null' }},
+    'Competition 1: Score Predictor — Rank Over Time');
+</script>
+{% endif %}
+
+{% if include_t2 %}
+<div class="progress-chart-wrap">
+    <canvas id="chart2"></canvas>
+</div>
+<script>
+makeChart('chart2', data.t2_rank, data.t2_points,
+    {{ 'data.cmp_t2_rank' if compare_user else 'null' }},
+    {{ 'data.cmp_t2_points' if compare_user else 'null' }},
+    'Competition 2: Odds Predictor — Rank Over Time');
+</script>
+{% endif %}
+
 {% else %}
 <div class="progress-no-data">
     <p>No ranking history yet.</p>
