@@ -609,6 +609,169 @@ def predict_outcome_inline(match_id):
     return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
 
+@bp.route("/predict_batch", methods=["POST"])
+@login_required
+def predict_batch():
+    selected_date = request.form.get("selected_date", "all")
+    selected_competition = request.form.get("competition", "classic")
+    group_id = request.form.get("group_id", type=int) or current_user.competition_id
+
+    _, allow_comp1, _ = _allowed_competitions_for_user(current_user, group_id)
+    if not allow_comp1:
+        flash("Your group does not include Competition 1.", "danger")
+        return redirect(url_for("main.matches", date=selected_date, competition="odds", group_id=group_id))
+
+    saved = 0
+    for key in request.form:
+        if key.startswith("home_") and key[5:].isdigit():
+            match_id = int(key[5:])
+            home_val = request.form.get(key, "").strip()
+            away_val = request.form.get(f"away_{match_id}", "").strip()
+            if not home_val or not away_val:
+                continue
+            try:
+                home_score = int(home_val)
+                away_score = int(away_val)
+            except ValueError:
+                continue
+            match = db.session.get(Match, match_id)
+            if not match or match.is_locked() or match.is_finished():
+                continue
+            prediction = Prediction.query.filter_by(
+                user_id=current_user.id, match_id=match_id, competition_id=group_id
+            ).first()
+            if prediction:
+                prediction.predicted_home_score = home_score
+                prediction.predicted_away_score = away_score
+            else:
+                db.session.add(Prediction(
+                    user_id=current_user.id,
+                    match_id=match_id,
+                    competition_id=group_id,
+                    predicted_home_score=home_score,
+                    predicted_away_score=away_score,
+                ))
+            saved += 1
+
+    if saved > 0:
+        try:
+            db.session.commit()
+            flash(f"Saved {saved} prediction{'s' if saved != 1 else ''}!", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash("Database error. Please try again.", "danger")
+            print(e)
+    else:
+        flash("No predictions submitted — fill in at least one score to save.", "warning")
+
+    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
+
+
+@bp.route("/predict_batch_odds", methods=["POST"])
+@login_required
+def predict_batch_odds():
+    selected_date = request.form.get("selected_date", "all")
+    selected_competition = request.form.get("competition", "odds")
+    group_id = request.form.get("group_id", type=int) or current_user.competition_id
+
+    _, _, allow_comp2 = _allowed_competitions_for_user(current_user, group_id)
+    if not allow_comp2:
+        flash("Your group does not include Competition 2.", "danger")
+        return redirect(url_for("main.matches", date=selected_date, competition="classic", group_id=group_id))
+
+    saved = 0
+    for key in request.form:
+        if key.startswith("outcome_") and key[8:].isdigit():
+            match_id = int(key[8:])
+            outcome = (request.form.get(key) or "").lower()
+            if outcome not in {"home", "draw", "away"}:
+                continue
+            match = db.session.get(Match, match_id)
+            if not match or match.is_locked() or match.is_finished():
+                continue
+            prediction = OddsPrediction.query.filter_by(
+                user_id=current_user.id, match_id=match_id, competition_id=group_id
+            ).first()
+            if prediction:
+                prediction.predicted_outcome = outcome
+            else:
+                db.session.add(OddsPrediction(
+                    user_id=current_user.id,
+                    match_id=match_id,
+                    competition_id=group_id,
+                    predicted_outcome=outcome,
+                ))
+            saved += 1
+
+    if saved > 0:
+        try:
+            db.session.commit()
+            flash(f"Saved {saved} prediction{'s' if saved != 1 else ''}!", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash("Database error. Please try again.", "danger")
+            print(e)
+    else:
+        flash("No predictions submitted — make at least one pick to save.", "warning")
+
+    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
+
+
+@bp.route("/predict_batch_qualifiers", methods=["POST"])
+@login_required
+def predict_batch_qualifiers():
+    selected_date = request.form.get("selected_date", "all")
+    selected_competition = request.form.get("competition", "classic")
+    group_id = request.form.get("group_id", type=int) or current_user.competition_id
+
+    _, allow_comp1, _ = _allowed_competitions_for_user(current_user, group_id)
+    if not allow_comp1:
+        flash("Your group does not include Competition 1.", "danger")
+        return redirect(url_for("main.matches", date=selected_date, competition="odds", group_id=group_id))
+
+    saved = 0
+    errors = []
+    for group_name, teams in GROUP_TEAMS.items():
+        team_1 = (request.form.get(f"team_1_{group_name}") or "").strip()
+        team_2 = (request.form.get(f"team_2_{group_name}") or "").strip()
+        if not team_1 or not team_2:
+            continue
+        if team_1 == team_2 or team_1 not in teams or team_2 not in teams:
+            errors.append(group_name)
+            continue
+        deadline = _group_deadline(group_name)
+        if deadline and _utc_now_naive() >= deadline:
+            continue
+        prediction = GroupQualifierPrediction.query.filter_by(
+            user_id=current_user.id, group_name=group_name, competition_id=group_id
+        ).first()
+        if prediction:
+            prediction.team_1 = team_1
+            prediction.team_2 = team_2
+        else:
+            db.session.add(GroupQualifierPrediction(
+                user_id=current_user.id, group_name=group_name, competition_id=group_id,
+                team_1=team_1, team_2=team_2,
+            ))
+        saved += 1
+
+    if saved > 0:
+        try:
+            db.session.commit()
+            flash(f"Saved {saved} group qualifier pick{'s' if saved != 1 else ''}!", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash("Database error. Please try again.", "danger")
+            print(e)
+    else:
+        flash("No valid qualifier picks to save.", "warning")
+
+    if errors:
+        flash(f"Skipped Group{'s' if len(errors) != 1 else ''} {', '.join(errors)} — select two different teams from the group.", "warning")
+
+    return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
+
+
 @bp.route("/predict_group_qualifiers", methods=["POST"])
 @login_required
 def predict_group_qualifiers():
