@@ -170,6 +170,27 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
+    # ── Round of 32 qualifier columns ─────────────────────────────────────────
+    try:
+        db.session.execute(db.text(
+            "ALTER TABLE matches ADD COLUMN IF NOT EXISTS advancing_team VARCHAR(50)"
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    try:
+        db.session.execute(db.text(
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS predicted_qualifier VARCHAR(50)"
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    # ── Seed knockout matches (idempotent — skips stages already present) ──────
+    from scripts.seed_matches import seed_knockout_matches
+    seed_knockout_matches()
+
     # ── Fix match group_name assignments (groups C/D, G/H, K/L were wrong) ──────
     group_fixes = {
         "C": ("Brazil", "Morocco", "Haiti", "Scotland"),
