@@ -187,6 +187,21 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
+    # ── Replace any TBD round_of_32 matches with actual fixtures ─────────────────
+    try:
+        from app.models import Prediction, OddsPrediction
+        tbd_r32 = Match.query.filter_by(stage="round_of_32", home_team="TBD").all()
+        if tbd_r32:
+            tbd_ids = [m.id for m in tbd_r32]
+            Prediction.query.filter(Prediction.match_id.in_(tbd_ids)).delete(synchronize_session=False)
+            OddsPrediction.query.filter(OddsPrediction.match_id.in_(tbd_ids)).delete(synchronize_session=False)
+            Match.query.filter(Match.id.in_(tbd_ids)).delete(synchronize_session=False)
+            db.session.commit()
+            print(f"Cleared {len(tbd_ids)} TBD round_of_32 matches.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Failed to clear TBD R32 matches: {e}")
+
     # ── Seed knockout matches (idempotent — skips slots already present by date) ──
     try:
         from scripts.seed_matches import seed_knockout_matches

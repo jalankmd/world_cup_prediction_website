@@ -139,23 +139,23 @@ world_cup_2026_matches = [
 # Stages use values recognised by scoring.py _stage_bonus().
 # ---------------------------
 knockout_matches = [
-    # Round of 32 – July 2-5 2026 (16 matches)
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-02 18:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-02 22:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-03 18:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-03 22:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-04 18:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-04 22:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-05 18:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-05 22:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-06 18:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-06 22:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-07 18:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-07 22:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-08 18:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-08 22:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-09 18:00", "stage": "round_of_32"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-09 22:00", "stage": "round_of_32"},
+    # Round of 32 – June 28 – July 3 2026 (all times UTC, EDT+4)
+    {"home_team": "South Africa",          "away_team": "Canada",                  "match_date": "2026-06-28 19:00", "stage": "round_of_32"},  # 3pm ET Jun 28
+    {"home_team": "Brazil",                "away_team": "Japan",                   "match_date": "2026-06-29 17:00", "stage": "round_of_32"},  # 1pm ET Jun 29
+    {"home_team": "Germany",               "away_team": "Paraguay",                "match_date": "2026-06-29 20:30", "stage": "round_of_32"},  # 4:30pm ET Jun 29
+    {"home_team": "Netherlands",           "away_team": "Morocco",                 "match_date": "2026-06-30 01:00", "stage": "round_of_32"},  # 9pm ET Jun 29
+    {"home_team": "Ivory Coast",           "away_team": "Norway",                  "match_date": "2026-06-30 17:00", "stage": "round_of_32"},  # 1pm ET Jun 30
+    {"home_team": "France",                "away_team": "Sweden",                  "match_date": "2026-06-30 21:00", "stage": "round_of_32"},  # 5pm ET Jun 30
+    {"home_team": "Mexico",                "away_team": "Ecuador",                 "match_date": "2026-07-01 01:00", "stage": "round_of_32"},  # 9pm ET Jun 30
+    {"home_team": "England",               "away_team": "DR Congo",                "match_date": "2026-07-01 16:00", "stage": "round_of_32"},  # 12pm ET Jul 1
+    {"home_team": "Belgium",               "away_team": "Senegal",                 "match_date": "2026-07-01 20:00", "stage": "round_of_32"},  # 4pm ET Jul 1
+    {"home_team": "USA",                   "away_team": "Bosnia and Herzegovina",  "match_date": "2026-07-02 00:00", "stage": "round_of_32"},  # 8pm ET Jul 1
+    {"home_team": "Spain",                 "away_team": "Austria",                 "match_date": "2026-07-02 19:00", "stage": "round_of_32"},  # 3pm ET Jul 2
+    {"home_team": "Portugal",              "away_team": "Croatia",                 "match_date": "2026-07-02 23:00", "stage": "round_of_32"},  # 7pm ET Jul 2
+    {"home_team": "Switzerland",           "away_team": "Algeria",                 "match_date": "2026-07-03 03:00", "stage": "round_of_32"},  # 11pm ET Jul 2
+    {"home_team": "Australia",             "away_team": "Egypt",                   "match_date": "2026-07-03 18:00", "stage": "round_of_32"},  # 2pm ET Jul 3
+    {"home_team": "Argentina",             "away_team": "Cape Verde",              "match_date": "2026-07-03 22:00", "stage": "round_of_32"},  # 6pm ET Jul 3
+    {"home_team": "Colombia",              "away_team": "Ghana",                   "match_date": "2026-07-04 01:30", "stage": "round_of_32"},  # 9:30pm ET Jul 3
 
     # Round of 16 – July 10-13 2026 (8 matches)
     {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-10 19:00", "stage": "round_of_16"},
