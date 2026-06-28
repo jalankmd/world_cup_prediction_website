@@ -187,9 +187,13 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
-    # ── Seed knockout matches (idempotent — skips stages already present) ──────
-    from scripts.seed_matches import seed_knockout_matches
-    seed_knockout_matches()
+    # ── Seed knockout matches (idempotent — skips slots already present by date) ──
+    try:
+        from scripts.seed_matches import seed_knockout_matches
+        seed_knockout_matches()
+    except Exception as e:
+        db.session.rollback()
+        print(f"seed_knockout_matches failed: {e}")
 
     # ── Fix match group_name assignments (groups C/D, G/H, K/L were wrong) ──────
     group_fixes = {

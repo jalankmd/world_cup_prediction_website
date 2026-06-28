@@ -209,13 +209,16 @@ def seed_matches():
 
 
 def seed_knockout_matches():
-    """Seed knockout stage placeholder matches. Idempotent — skips stages already present."""
-    existing_stages = {m.stage for m in Match.query.filter(Match.stage != "group").all()}
+    """Seed knockout stage placeholder matches. Idempotent — skips individual slots already present by date."""
+    existing_dates = {
+        m.match_date for m in Match.query.filter(Match.stage != "group").all()
+        if m.match_date
+    }
     added = 0
     for m in knockout_matches:
-        if m["stage"] in existing_stages:
-            continue
         match_date = datetime.strptime(m["match_date"], "%Y-%m-%d %H:%M")
+        if match_date in existing_dates:
+            continue
         match = Match(
             home_team=m["home_team"],
             away_team=m["away_team"],
@@ -227,6 +230,7 @@ def seed_knockout_matches():
             away_score=None,
         )
         db.session.add(match)
+        existing_dates.add(match_date)
         added += 1
     db.session.commit()
     print(f"Seeded {added} knockout stage matches.")
