@@ -398,6 +398,34 @@ button:hover {
     background: #fad7da;
 }
 
+.col-qualifier {
+    min-width: 130px;
+}
+
+.qualifier-select {
+    width: 100%;
+    min-width: 120px;
+    font-size: 0.85rem;
+    padding: 4px 6px;
+}
+
+.qualifier-correct {
+    color: #198754;
+    font-weight: 700;
+    margin-left: 4px;
+}
+
+.qualifier-wrong {
+    color: #dc3545;
+    font-weight: 700;
+    margin-left: 4px;
+}
+
+.advancing-label {
+    color: #555;
+    font-size: 0.78rem;
+}
+
 .prediction-inline-form {
     display: inline-flex;
     align-items: center;

@@ -60,24 +60,27 @@ def calculate_points(prediction):
 
     bonus = _stage_bonus(match.stage)
 
+    qualifier_bonus = 0
+    if match.stage == "round_of_32" and match.advancing_team and prediction.predicted_qualifier:
+        if prediction.predicted_qualifier == match.advancing_team:
+            qualifier_bonus = 1
+
     # 1. Exact score prediction
     if (prediction.predicted_home_score == match.home_score and
         prediction.predicted_away_score == match.away_score):
-        return 3 + bonus
+        return 3 + bonus + qualifier_bonus
 
     # 2. Correct outcome prediction (winner/draw)
     predicted_diff = prediction.predicted_home_score - prediction.predicted_away_score
     actual_diff = match.home_score - match.away_score
 
-    # Outcome matches if both predicted and actual differences have the same sign
-    # Positive diff: home wins, Negative diff: away wins, Zero: draw
     if (predicted_diff > 0 and actual_diff > 0) or \
        (predicted_diff < 0 and actual_diff < 0) or \
        (predicted_diff == 0 and actual_diff == 0):
-        return 2 + bonus
+        return 2 + bonus + qualifier_bonus
 
-    # 3. Wrong prediction
-    return 0
+    # 3. Wrong score — still award qualifier bonus if earned
+    return qualifier_bonus
 
 
 def calculate_odds_points(prediction):

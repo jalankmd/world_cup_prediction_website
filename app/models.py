@@ -116,6 +116,7 @@ class Match(db.Model):
     home_odds = db.Column(db.Float, nullable=True)
     draw_odds = db.Column(db.Float, nullable=True)
     away_odds = db.Column(db.Float, nullable=True)
+    advancing_team = db.Column(db.String(50), nullable=True)
 
     predictions = db.relationship('Prediction', backref='match', lazy=True)
     odds_predictions = db.relationship('OddsPrediction', backref='match', lazy=True)
@@ -139,6 +140,7 @@ class Prediction(db.Model):
     competition_id = db.Column(db.Integer, db.ForeignKey("competitions.id"), nullable=True)
     predicted_home_score = db.Column(db.Integer, nullable=False)
     predicted_away_score = db.Column(db.Integer, nullable=False)
+    predicted_qualifier = db.Column(db.String(50), nullable=True)
     points = db.Column(db.Integer, default=0)
 
     __table_args__ = (

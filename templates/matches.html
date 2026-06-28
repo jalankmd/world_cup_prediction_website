@@ -181,6 +181,7 @@ setInterval(updateChecklistCountdowns, 1000);
         <div class="save-all-bar">
             <button type="submit" class="save-all-btn">Save All Predictions</button>
         </div>
+        {% set has_r32 = matches | selectattr('stage', 'equalto', 'round_of_32') | list | length > 0 %}
         <div class="matches-table-wrap">
             <table class="matches-table">
                 <thead>
@@ -190,6 +191,7 @@ setInterval(updateChecklistCountdowns, 1000);
                         <th>Away Team</th>
                         <th>Status</th>
                         <th class="col-prediction">Your Prediction</th>
+                        {% if has_r32 %}<th>Qualifier Pick</th>{% endif %}
                         <th>Final Score</th>
                         <th>Points</th>
                     </tr>
@@ -244,9 +246,11 @@ setInterval(updateChecklistCountdowns, 1000);
                             <td class="col-prediction">
                                 {% if status == "open" %}
                                     <div class="prediction-inline-form">
-                                        <input type="number" name="home_{{ match.id }}" min="0" max="20" value="{{ pred.predicted_home_score if pred else '' }}">
+                                        <input type="number" name="home_{{ match.id }}" min="0" max="20" value="{{ pred.predicted_home_score if pred else '' }}"
+                                            {% if match.stage == 'round_of_32' %}class="r32-score-input" data-match-id="{{ match.id }}" data-role="home"{% endif %}>
                                         <span>-</span>
-                                        <input type="number" name="away_{{ match.id }}" min="0" max="20" value="{{ pred.predicted_away_score if pred else '' }}">
+                                        <input type="number" name="away_{{ match.id }}" min="0" max="20" value="{{ pred.predicted_away_score if pred else '' }}"
+                                            {% if match.stage == 'round_of_32' %}class="r32-score-input" data-match-id="{{ match.id }}" data-role="away"{% endif %}>
                                     </div>
                                 {% elif pred %}
                                     {{ pred.predicted_home_score }} - {{ pred.predicted_away_score }}
@@ -254,9 +258,42 @@ setInterval(updateChecklistCountdowns, 1000);
                                     No prediction
                                 {% endif %}
                             </td>
+                            {% if has_r32 %}
+                            <td class="col-qualifier">
+                                {% if match.stage == 'round_of_32' %}
+                                    {% if status == "open" %}
+                                        <select name="qualifier_{{ match.id }}"
+                                                class="qualifier-select"
+                                                data-match-id="{{ match.id }}"
+                                                data-home="{{ match.home_team }}"
+                                                data-away="{{ match.away_team }}">
+                                            <option value="">— pick qualifier —</option>
+                                            <option value="{{ match.home_team }}" {% if pred and pred.predicted_qualifier == match.home_team %}selected{% endif %}>{{ match.home_team }}</option>
+                                            <option value="{{ match.away_team }}" {% if pred and pred.predicted_qualifier == match.away_team %}selected{% endif %}>{{ match.away_team }}</option>
+                                        </select>
+                                    {% elif pred and pred.predicted_qualifier %}
+                                        {{ pred.predicted_qualifier }}
+                                        {% if status == 'finished' and match.advancing_team %}
+                                            {% if pred.predicted_qualifier == match.advancing_team %}
+                                                <span class="qualifier-correct">✓</span>
+                                            {% else %}
+                                                <span class="qualifier-wrong">✗</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            {% endif %}
                             <td>
                                 {% if match.is_finished() %}
                                     {{ match.home_score }} - {{ match.away_score }}
+                                    {% if match.stage == 'round_of_32' and match.advancing_team %}
+                                        <br><small class="advancing-label">↑ {{ match.advancing_team }}</small>
+                                    {% endif %}
                                 {% else %}
                                     -
                                 {% endif %}
@@ -271,6 +308,30 @@ setInterval(updateChecklistCountdowns, 1000);
             <button type="submit" class="save-all-btn">Save All Predictions</button>
         </div>
     </form>
+<script>
+document.querySelectorAll('.qualifier-select').forEach(function(sel) {
+    var matchId = sel.dataset.matchId;
+    var homeTeam = sel.dataset.home;
+    var awayTeam = sel.dataset.away;
+    var homeInput = document.querySelector('.r32-score-input[data-match-id="' + matchId + '"][data-role="home"]');
+    var awayInput = document.querySelector('.r32-score-input[data-match-id="' + matchId + '"][data-role="away"]');
+
+    function syncQualifier() {
+        var h = parseInt(homeInput ? homeInput.value : '');
+        var a = parseInt(awayInput ? awayInput.value : '');
+        if (!isNaN(h) && !isNaN(a) && h !== a) {
+            sel.value = h > a ? homeTeam : awayTeam;
+            sel.style.opacity = '0.6';
+        } else {
+            sel.style.opacity = '1';
+        }
+    }
+
+    if (homeInput) homeInput.addEventListener('input', syncQualifier);
+    if (awayInput) awayInput.addEventListener('input', syncQualifier);
+    syncQualifier();
+});
+</script>
 
     <section class="bonus-section">
         <h3>Group Top 2 Picks</h3>

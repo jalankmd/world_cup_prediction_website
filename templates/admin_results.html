@@ -40,6 +40,7 @@
                         <th>Stadium</th>
                         <th>Home Score</th>
                         <th>Away Score</th>
+                        <th>Advances (R32)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -95,6 +96,17 @@
                                    min="0" max="30"
                                    value="{{ match.away_score if match.away_score is not none else '' }}"
                                    placeholder="–">
+                        </td>
+                        <td>
+                            {% if match.stage == 'round_of_32' %}
+                                <select name="advancing_team-{{ match.id }}">
+                                    <option value="">— not set —</option>
+                                    <option value="{{ match.home_team }}" {% if match.advancing_team == match.home_team %}selected{% endif %}>{{ match.home_team }}</option>
+                                    <option value="{{ match.away_team }}" {% if match.advancing_team == match.away_team %}selected{% endif %}>{{ match.away_team }}</option>
+                                </select>
+                            {% else %}
+                                —
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

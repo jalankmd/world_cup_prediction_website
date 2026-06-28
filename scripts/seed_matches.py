@@ -209,7 +209,7 @@ def seed_matches():
 
 
 def seed_knockout_matches():
-    """Seed knockout stage placeholder matches. Idempotent — skips if already present."""
+    """Seed knockout stage placeholder matches. Idempotent — skips stages already present."""
     existing_stages = {m.stage for m in Match.query.filter(Match.stage != "group").all()}
     added = 0
     for m in knockout_matches:
@@ -227,10 +227,9 @@ def seed_knockout_matches():
             away_score=None,
         )
         db.session.add(match)
-        existing_stages.add(m["stage"])
         added += 1
     db.session.commit()
-    print(f"Seeded {added} knockout stage match slots.")
+    print(f"Seeded {added} knockout stage matches.")
 
 
 # ---------------------------

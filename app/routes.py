@@ -401,7 +401,9 @@ def matches():
         flash("Admins use the Results Entry page to enter outcomes.", "info")
         return redirect(url_for("main.admin_results", admin_tab="classic"))
 
-    all_matches = Match.query.filter_by(stage="group").order_by(Match.match_date).all()
+    all_matches = Match.query.filter(
+        Match.stage.in_(["group", "round_of_32"])
+    ).order_by(Match.match_date).all()
 
     # Determine the active competition context
     group_id = request.args.get("group_id", type=int) or current_user.competition_id
@@ -587,9 +589,19 @@ def predict_inline(match_id):
         flash("Invalid prediction values.", "danger")
         return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
+    qualifier_val = None
+    if match.stage == "round_of_32":
+        q = (request.form.get("predicted_qualifier") or "").strip()
+        if home_score != away_score:
+            qualifier_val = match.home_team if home_score > away_score else match.away_team
+        elif q in {match.home_team, match.away_team}:
+            qualifier_val = q
+
     if prediction:
         prediction.predicted_home_score = home_score
         prediction.predicted_away_score = away_score
+        if match.stage == "round_of_32":
+            prediction.predicted_qualifier = qualifier_val
         flash("Prediction updated!", "success")
     else:
         db.session.add(Prediction(
@@ -598,6 +610,7 @@ def predict_inline(match_id):
             competition_id=group_id,
             predicted_home_score=home_score,
             predicted_away_score=away_score,
+            predicted_qualifier=qualifier_val,
         ))
         flash("Prediction saved!", "success")
 
@@ -688,12 +701,23 @@ def predict_batch():
             match = db.session.get(Match, match_id)
             if not match or match.is_locked() or match.is_finished():
                 continue
+
+            qualifier_val = None
+            if match.stage == "round_of_32":
+                q = (request.form.get(f"qualifier_{match_id}") or "").strip()
+                if home_score != away_score:
+                    qualifier_val = match.home_team if home_score > away_score else match.away_team
+                elif q in {match.home_team, match.away_team}:
+                    qualifier_val = q
+
             prediction = Prediction.query.filter_by(
                 user_id=current_user.id, match_id=match_id, competition_id=group_id
             ).first()
             if prediction:
                 prediction.predicted_home_score = home_score
                 prediction.predicted_away_score = away_score
+                if match.stage == "round_of_32":
+                    prediction.predicted_qualifier = qualifier_val
             else:
                 db.session.add(Prediction(
                     user_id=current_user.id,
@@ -701,6 +725,7 @@ def predict_batch():
                     competition_id=group_id,
                     predicted_home_score=home_score,
                     predicted_away_score=away_score,
+                    predicted_qualifier=qualifier_val,
                 ))
             saved += 1
 
@@ -971,7 +996,9 @@ def user_predictions():
         preds = PodiumPrediction.query.filter_by(competition_id=selected_comp_id).all()
         pred_map = {p.user_id: p for p in preds}
 
-    all_matches = Match.query.order_by(Match.match_date).all()
+    all_matches = Match.query.filter(
+        Match.stage.in_(["group", "round_of_32"])
+    ).order_by(Match.match_date).all()
 
     group_tabs = [{"value": str(c.id), "label": c.name} for c in user_comps] if len(user_comps) > 1 else []
 
@@ -1368,7 +1395,9 @@ def admin_predictions():
             preds = PodiumPrediction.query.filter_by(competition_id=selected_group_id).all()
             pred_map = {p.user_id: p for p in preds}
 
-    all_matches = Match.query.order_by(Match.match_date).all()
+    all_matches = Match.query.filter(
+        Match.stage.in_(["group", "round_of_32"])
+    ).order_by(Match.match_date).all()
     group_tabs = [{"value": str(g.id), "label": g.name} for g in groups]
     all_teams = sorted({m.home_team for m in all_matches}.union({m.away_team for m in all_matches}))
 
@@ -1674,7 +1703,7 @@ def admin_results():
             admin_tab = "classic"
 
         editable_fields = {
-            "classic": {"home_score", "away_score", "home_team", "away_team", "stadium", "stage", "group_name", "match_date"},
+            "classic": {"home_score", "away_score", "home_team", "away_team", "stadium", "stage", "group_name", "match_date", "advancing_team"},
             "odds": {"home_score", "away_score", "home_odds", "draw_odds", "away_odds"},
         }
 
@@ -1707,6 +1736,8 @@ def admin_results():
                             match.group_name = data.strip().upper() if data.strip() else None
                         elif field == "match_date":
                             match.match_date = datetime.strptime(data, "%Y-%m-%dT%H:%M") if data else None
+                        elif field == "advancing_team":
+                            match.advancing_team = data.strip() or None
                         elif field in {"home_odds", "draw_odds", "away_odds"}:
                             odd_val = float(data) if data != "" else None
                             if field == "home_odds":
