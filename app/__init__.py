@@ -5,6 +5,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 from datetime import timedelta
 
@@ -16,6 +18,8 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 csrf = CSRFProtect()
+cors = CORS()
+jwt = JWTManager()
 
 login_manager.login_view = "main.login"
 
@@ -40,11 +44,17 @@ def create_app(config_class=None):
     # Ensure instance folder exists
     os.makedirs(app.instance_path, exist_ok=True)
 
+    # JWT shares the Flask secret key; tokens last 30 days
+    app.config["JWT_SECRET_KEY"] = app.config.get("SECRET_KEY", "dev-jwt-secret")
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=30)
+
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
+    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+    jwt.init_app(app)
 
     from app.models import User
 
@@ -55,6 +65,10 @@ def create_app(config_class=None):
     # Register blueprints
     from app.routes import bp as main_bp
     app.register_blueprint(main_bp)
+
+    from app.api import api_bp
+    app.register_blueprint(api_bp)
+    csrf.exempt(api_bp)
 
     @app.template_filter('to_et')
     def to_et_filter(dt):
