@@ -127,6 +127,7 @@ def _serialize_match(match, classic_pred=None, odds_pred=None):
         "away_odds": match.away_odds,
         "is_locked": match.is_locked(),
         "is_finished": match.is_finished(),
+        "advancing_team": match.advancing_team,
         "classic_prediction": {
             "predicted_home_score": classic_pred.predicted_home_score,
             "predicted_away_score": classic_pred.predicted_away_score,
