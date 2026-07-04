@@ -1687,6 +1687,41 @@ def admin_dashboard():
     return render_template("admin_dashboard.html", groups=groups, all_users=all_users)
 
 
+@bp.route("/admin/seed_r16")
+@login_required
+def seed_r16():
+    """One-time route: update R16 placeholder rows with confirmed teams. DELETE after use."""
+    if not getattr(current_user, "is_admin", False):
+        return "Access denied", 403
+
+    R16 = [
+        {"home_team": "Morocco",     "away_team": "Canada",      "match_date": "2026-07-04 17:00"},
+        {"home_team": "France",      "away_team": "Paraguay",    "match_date": "2026-07-04 21:00"},
+        {"home_team": "Brazil",      "away_team": "Norway",      "match_date": "2026-07-05 20:00"},
+        {"home_team": "Mexico",      "away_team": "England",     "match_date": "2026-07-06 00:00"},
+        {"home_team": "Spain",       "away_team": "Portugal",    "match_date": "2026-07-06 19:00"},
+        {"home_team": "USA",         "away_team": "Belgium",     "match_date": "2026-07-07 00:00"},
+        {"home_team": "Argentina",   "away_team": "Egypt",       "match_date": "2026-07-07 16:00"},
+        {"home_team": "Colombia",    "away_team": "Switzerland", "match_date": "2026-07-07 20:00"},
+    ]
+
+    r16_rows = Match.query.filter_by(stage="round_of_16").order_by(Match.match_date).all()
+    if len(r16_rows) < 8:
+        return f"Error: only {len(r16_rows)} R16 rows found in DB, expected 8.", 500
+
+    lines = []
+    for i, new in enumerate(R16):
+        m = r16_rows[i]
+        old = f"{m.home_team} vs {m.away_team}"
+        m.home_team = new["home_team"]
+        m.away_team = new["away_team"]
+        m.match_date = datetime.strptime(new["match_date"], "%Y-%m-%d %H:%M")
+        lines.append(f"{old} → {m.home_team} vs {m.away_team} @ {m.match_date}")
+
+    db.session.commit()
+    return "<br>".join(["<b>R16 updated:</b>"] + lines + ["<br><b>Done. Remove this route from routes.py now.</b>"])
+
+
 @bp.route("/admin/results", methods=["GET", "POST"])
 @login_required
 def admin_results():
