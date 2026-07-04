@@ -415,7 +415,7 @@ def predict_match(match_id):
     except (KeyError, ValueError, TypeError):
         return jsonify({"error": "Invalid score values"}), 400
     qualifier_val = None
-    if match.stage == "round_of_32":
+    if match.stage in {"round_of_32", "round_of_16"}:
         q = (data.get("predicted_qualifier") or "").strip()
         if home_score != away_score:
             qualifier_val = match.home_team if home_score > away_score else match.away_team
@@ -425,7 +425,7 @@ def predict_match(match_id):
     if prediction:
         prediction.predicted_home_score = home_score
         prediction.predicted_away_score = away_score
-        if match.stage == "round_of_32":
+        if match.stage in {"round_of_32", "round_of_16"}:
             prediction.predicted_qualifier = qualifier_val
         msg = "Prediction updated!"
     else:

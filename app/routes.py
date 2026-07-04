@@ -590,7 +590,7 @@ def predict_inline(match_id):
         return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
     qualifier_val = None
-    if match.stage == "round_of_32":
+    if match.stage in {"round_of_32", "round_of_16"}:
         q = (request.form.get("predicted_qualifier") or "").strip()
         if home_score != away_score:
             qualifier_val = match.home_team if home_score > away_score else match.away_team
@@ -600,7 +600,7 @@ def predict_inline(match_id):
     if prediction:
         prediction.predicted_home_score = home_score
         prediction.predicted_away_score = away_score
-        if match.stage == "round_of_32":
+        if match.stage in {"round_of_32", "round_of_16"}:
             prediction.predicted_qualifier = qualifier_val
         flash("Prediction updated!", "success")
     else:
@@ -703,7 +703,7 @@ def predict_batch():
                 continue
 
             qualifier_val = None
-            if match.stage == "round_of_32":
+            if match.stage in {"round_of_32", "round_of_16"}:
                 q = (request.form.get(f"qualifier_{match_id}") or "").strip()
                 if home_score != away_score:
                     qualifier_val = match.home_team if home_score > away_score else match.away_team
@@ -716,7 +716,7 @@ def predict_batch():
             if prediction:
                 prediction.predicted_home_score = home_score
                 prediction.predicted_away_score = away_score
-                if match.stage == "round_of_32":
+                if match.stage in {"round_of_32", "round_of_16"}:
                     prediction.predicted_qualifier = qualifier_val
             else:
                 db.session.add(Prediction(
