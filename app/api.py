@@ -319,7 +319,7 @@ def matches():
     _edt = timedelta(hours=-4)
 
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16"])
     ).order_by(Match.match_date).all()
 
     available_dates = sorted({(m.match_date + _edt).date() for m in all_matches if m.match_date})
@@ -812,7 +812,7 @@ def predictions():
         tab = "classic"
     users = sorted([u for u in selected_comp.members if not u.is_admin], key=lambda u: u.username.lower())
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16"])
     ).order_by(Match.match_date).all()
     result = {
         "selected_comp_id": selected_comp_id, "tab": tab,

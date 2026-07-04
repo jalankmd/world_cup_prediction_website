@@ -402,7 +402,7 @@ def matches():
         return redirect(url_for("main.admin_results", admin_tab="classic"))
 
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16"])
     ).order_by(Match.match_date).all()
 
     # Determine the active competition context
@@ -997,7 +997,7 @@ def user_predictions():
         pred_map = {p.user_id: p for p in preds}
 
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16"])
     ).order_by(Match.match_date).all()
 
     group_tabs = [{"value": str(c.id), "label": c.name} for c in user_comps] if len(user_comps) > 1 else []
@@ -1396,7 +1396,7 @@ def admin_predictions():
             pred_map = {p.user_id: p for p in preds}
 
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16"])
     ).order_by(Match.match_date).all()
     group_tabs = [{"value": str(g.id), "label": g.name} for g in groups]
     all_teams = sorted({m.home_team for m in all_matches}.union({m.away_team for m in all_matches}))
