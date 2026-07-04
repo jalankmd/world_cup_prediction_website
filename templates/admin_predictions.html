@@ -56,7 +56,7 @@
                                 <td>
                                     {% if match.is_finished() %}
                                         {{ match.home_score }}–{{ match.away_score }}
-                                        {% if match.stage == 'round_of_32' and match.advancing_team %}
+                                        {% if match.stage in ['round_of_32', 'round_of_16'] and match.advancing_team %}
                                             <br><small>↑ {{ match.advancing_team }}</small>
                                         {% endif %}
                                     {% else %}
@@ -68,7 +68,7 @@
                                     <td class="pred-cell {% if pred %}has-pred{% endif %}">
                                         {% if pred %}
                                             {{ pred.predicted_home_score }}–{{ pred.predicted_away_score }}
-                                            {% if match.stage == 'round_of_32' and pred.predicted_qualifier %}
+                                            {% if match.stage in ['round_of_32', 'round_of_16'] and pred.predicted_qualifier %}
                                                 <br><small>↑ {{ pred.predicted_qualifier }}</small>
                                             {% endif %}
                                             {% if match.is_finished() %}
