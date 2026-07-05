@@ -86,6 +86,8 @@
                                             data-away-team="{{ match.away_team }}"
                                             data-home-score="{{ pred.predicted_home_score if pred else '' }}"
                                             data-away-score="{{ pred.predicted_away_score if pred else '' }}"
+                                            data-stage="{{ match.stage }}"
+                                            data-qualifier="{{ pred.predicted_qualifier if pred else '' }}"
                                             data-has-pred="{{ 'true' if pred else 'false' }}"
                                             onclick="openEditModalFromBtn(this)" title="Edit prediction">&#9998;</button>
                                     </td>
@@ -280,6 +282,15 @@
                         <input type="number" name="away_score" id="modal-away-score" min="0" max="20" value="0">
                     </label>
                 </div>
+                <div id="modal-qualifier-row" style="display:none; margin-top: 12px;">
+                    <label>Who advances?
+                        <select name="predicted_qualifier" id="modal-qualifier-select">
+                            <option value="">— no pick —</option>
+                            <option id="modal-qualifier-home" value=""></option>
+                            <option id="modal-qualifier-away" value=""></option>
+                        </select>
+                    </label>
+                </div>
             </div>
 
             {# Odds: outcome radio buttons #}
@@ -372,6 +383,16 @@ function openEditModalFromBtn(btn) {
         document.getElementById('modal-away-team-label').textContent = d.awayTeam;
         document.getElementById('modal-home-score').value = d.homeScore !== '' ? d.homeScore : 0;
         document.getElementById('modal-away-score').value = d.awayScore !== '' ? d.awayScore : 0;
+        const isKnockout = d.stage === 'round_of_32' || d.stage === 'round_of_16';
+        const qualifierRow = document.getElementById('modal-qualifier-row');
+        qualifierRow.style.display = isKnockout ? '' : 'none';
+        if (isKnockout) {
+            const homeOpt = document.getElementById('modal-qualifier-home');
+            const awayOpt = document.getElementById('modal-qualifier-away');
+            homeOpt.value = d.homeTeam; homeOpt.textContent = d.homeTeam;
+            awayOpt.value = d.awayTeam; awayOpt.textContent = d.awayTeam;
+            document.getElementById('modal-qualifier-select').value = d.qualifier || '';
+        }
         document.getElementById('modal-classic-section').style.display = '';
 
     } else if (predType === 'odds') {

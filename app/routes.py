@@ -1446,6 +1446,10 @@ def admin_edit_user_prediction():
             if not match_id:
                 flash("Match not specified.", "danger")
                 return redirect(redirect_url)
+            match = db.session.get(Match, match_id)
+            if not match:
+                flash("Match not found.", "danger")
+                return redirect(redirect_url)
             pred = Prediction.query.filter_by(user_id=user_id, match_id=match_id, competition_id=competition_id).first()
             if action == "delete":
                 if pred:
@@ -1454,14 +1458,20 @@ def admin_edit_user_prediction():
             else:
                 home_score = int(request.form["home_score"])
                 away_score = int(request.form["away_score"])
+                qualifier = None
+                if match.stage in {"round_of_32", "round_of_16"}:
+                    qualifier = (request.form.get("predicted_qualifier") or "").strip() or None
                 if pred:
                     pred.predicted_home_score = home_score
                     pred.predicted_away_score = away_score
+                    if match.stage in {"round_of_32", "round_of_16"}:
+                        pred.predicted_qualifier = qualifier
                     flash(f"Score prediction updated for {target_user.username}.", "success")
                 else:
                     db.session.add(Prediction(
                         user_id=user_id, match_id=match_id, competition_id=competition_id,
                         predicted_home_score=home_score, predicted_away_score=away_score,
+                        predicted_qualifier=qualifier,
                     ))
                     flash(f"Score prediction created for {target_user.username}.", "success")
 
