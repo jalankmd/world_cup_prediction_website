@@ -1,16 +1,20 @@
 """
-Update quarter-final match teams and dates from TBD placeholders to actuals.
+Ensure the four real quarter-final fixtures exist, replacing TBD placeholders.
 
 All 4 matchups confirmed (sources: Al Jazeera / Sky Sports, July 2026).
 Times are UTC (EDT = UTC-4).
 
-Run via Railway CLI:
+Safe to run in any DB state: removes leftover TBD quarter_final placeholder
+rows (and any predictions on them), then upserts each real fixture by team
+pair. Running on every deploy is handled by scripts/startup.py; this script
+exists for manual runs:
+
     railway run python scripts/update_qf_teams.py
 """
 
 from datetime import datetime
 from app import create_app, db
-from app.models import Match
+from app.models import Match, Prediction, OddsPrediction
 
 # All times UTC (EDT+4h).
 QF_MATCHES = [
@@ -22,25 +26,36 @@ QF_MATCHES = [
 
 
 def update_qf():
-    qf = Match.query.filter_by(stage="quarter_final").order_by(Match.match_date).all()
-    print(f"Found {len(qf)} quarter_final matches in DB.")
+    tbd = Match.query.filter_by(stage="quarter_final", home_team="TBD").all()
+    if tbd:
+        tbd_ids = [m.id for m in tbd]
+        Prediction.query.filter(Prediction.match_id.in_(tbd_ids)).delete(synchronize_session=False)
+        OddsPrediction.query.filter(OddsPrediction.match_id.in_(tbd_ids)).delete(synchronize_session=False)
+        Match.query.filter(Match.id.in_(tbd_ids)).delete(synchronize_session=False)
+        print(f"Removed {len(tbd_ids)} TBD quarter_final placeholders.")
 
-    if len(qf) < len(QF_MATCHES):
-        print(f"ERROR: only {len(qf)} QF slots in DB, need {len(QF_MATCHES)}.")
-        return
-
-    for i, new in enumerate(QF_MATCHES):
-        db_match = qf[i]
-        old_label = f"{db_match.home_team} vs {db_match.away_team} @ {db_match.match_date}"
-        db_match.home_team = new["home_team"]
-        db_match.away_team = new["away_team"]
-        db_match.match_date = datetime.strptime(new["match_date"], "%Y-%m-%d %H:%M")
-        db_match.stadium = new["stadium"]
-        print(f"  [{i+1}] {old_label}")
-        print(f"      → {db_match.home_team} vs {db_match.away_team} @ {db_match.match_date}")
+    for new in QF_MATCHES:
+        match_date = datetime.strptime(new["match_date"], "%Y-%m-%d %H:%M")
+        match = Match.query.filter_by(
+            stage="quarter_final", home_team=new["home_team"], away_team=new["away_team"]
+        ).first()
+        if match:
+            match.match_date = match_date
+            match.stadium = new["stadium"]
+            print(f"  updated: {match.home_team} vs {match.away_team} @ {match.match_date}")
+        else:
+            db.session.add(Match(
+                home_team=new["home_team"],
+                away_team=new["away_team"],
+                stadium=new["stadium"],
+                group_name=None,
+                stage="quarter_final",
+                match_date=match_date,
+            ))
+            print(f"  added:   {new['home_team']} vs {new['away_team']} @ {match_date}")
 
     db.session.commit()
-    print("\nDone. All 4 quarter-final matches updated.")
+    print("\nDone. All 4 quarter-final fixtures are in place.")
 
 
 if __name__ == "__main__":

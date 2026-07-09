@@ -157,15 +157,15 @@ knockout_matches = [
     {"home_team": "Argentina",             "away_team": "Cape Verde",              "match_date": "2026-07-03 22:00", "stage": "round_of_32"},  # 6pm ET Jul 3
     {"home_team": "Colombia",              "away_team": "Ghana",                   "match_date": "2026-07-04 01:30", "stage": "round_of_32"},  # 9:30pm ET Jul 3
 
-    # Round of 16 – July 10-13 2026 (8 matches)
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-10 19:00", "stage": "round_of_16"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-11 19:00", "stage": "round_of_16"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-12 19:00", "stage": "round_of_16"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-13 19:00", "stage": "round_of_16"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-14 19:00", "stage": "round_of_16"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-15 19:00", "stage": "round_of_16"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-16 19:00", "stage": "round_of_16"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-17 19:00", "stage": "round_of_16"},
+    # Round of 16 – July 4-7 2026 (8 matches, times UTC)
+    {"home_team": "Morocco",   "away_team": "Canada",      "match_date": "2026-07-04 17:00", "stage": "round_of_16"},  # 1pm ET Jul 4
+    {"home_team": "France",    "away_team": "Paraguay",    "match_date": "2026-07-04 21:00", "stage": "round_of_16"},  # 5pm ET Jul 4
+    {"home_team": "Brazil",    "away_team": "Norway",      "match_date": "2026-07-05 20:00", "stage": "round_of_16"},  # 4pm ET Jul 5
+    {"home_team": "Mexico",    "away_team": "England",     "match_date": "2026-07-06 00:00", "stage": "round_of_16"},  # 8pm ET Jul 5
+    {"home_team": "Spain",     "away_team": "Portugal",    "match_date": "2026-07-06 19:00", "stage": "round_of_16"},  # 3pm ET Jul 6
+    {"home_team": "USA",       "away_team": "Belgium",     "match_date": "2026-07-07 00:00", "stage": "round_of_16"},  # 8pm ET Jul 6
+    {"home_team": "Argentina", "away_team": "Egypt",       "match_date": "2026-07-07 16:00", "stage": "round_of_16"},  # noon ET Jul 7
+    {"home_team": "Colombia",  "away_team": "Switzerland", "match_date": "2026-07-07 20:00", "stage": "round_of_16"},  # 4pm ET Jul 7
 
     # Quarter-finals – July 9-11 2026 (4 matches, times UTC)
     {"home_team": "France",    "away_team": "Morocco",     "match_date": "2026-07-09 20:00", "stage": "quarter_final"},  # 4pm ET Jul 9, Boston

@@ -187,20 +187,26 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
-    # ── Replace any TBD round_of_32 matches with actual fixtures ─────────────────
+    # ── Replace TBD knockout matches with actual fixtures ────────────────────────
+    # Only for stages whose real fixtures are now in seed_matches.py (R32/R16/QF).
+    # Leftover TBD placeholders (and any predictions on them) are removed so the
+    # date-based idempotency check in seed_knockout_matches can't collide with them.
     try:
         from app.models import Prediction, OddsPrediction
-        tbd_r32 = Match.query.filter_by(stage="round_of_32", home_team="TBD").all()
-        if tbd_r32:
-            tbd_ids = [m.id for m in tbd_r32]
+        tbd_knockouts = Match.query.filter(
+            Match.stage.in_(["round_of_32", "round_of_16", "quarter_final"]),
+            Match.home_team == "TBD",
+        ).all()
+        if tbd_knockouts:
+            tbd_ids = [m.id for m in tbd_knockouts]
             Prediction.query.filter(Prediction.match_id.in_(tbd_ids)).delete(synchronize_session=False)
             OddsPrediction.query.filter(OddsPrediction.match_id.in_(tbd_ids)).delete(synchronize_session=False)
             Match.query.filter(Match.id.in_(tbd_ids)).delete(synchronize_session=False)
             db.session.commit()
-            print(f"Cleared {len(tbd_ids)} TBD round_of_32 matches.")
+            print(f"Cleared {len(tbd_ids)} TBD knockout matches (R32/R16/QF).")
     except Exception as e:
         db.session.rollback()
-        print(f"Failed to clear TBD R32 matches: {e}")
+        print(f"Failed to clear TBD knockout matches: {e}")
 
     # ── Seed knockout matches (idempotent — skips slots already present by date) ──
     try:
