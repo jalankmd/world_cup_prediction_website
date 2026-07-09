@@ -318,7 +318,6 @@ with app.app_context():
         # Group G
         ("Spain",                   "Cape Verde",        "2026-06-15 16:00:00"),
         ("Belgium",                 "Egypt",             "2026-06-15 19:00:00"),
-        ("Spain",                   "Belgium",           "2026-06-21 16:00:00"),
         ("Cape Verde",              "Egypt",             "2026-06-21 19:00:00"),
         ("Uruguay",                 "Cape Verde",        "2026-06-21 22:00:00"),
         ("New Zealand",             "Egypt",             "2026-06-22 01:00:00"),
@@ -360,10 +359,14 @@ with app.app_context():
         ("Colombia",                "Portugal",          "2026-06-27 23:30:00"),
         ("DR Congo",                "Uzbekistan",        "2026-06-27 23:30:00"),
     ]
+    # stage = 'group' guard: these are group-stage kickoff fixes only. Without it,
+    # a team pair that later meets again in a knockout round gets its knockout
+    # kickoff stomped on every deploy (this hit the Spain vs Belgium quarter-final).
     for home, away, utc_str in match_times:
         try:
             db.session.execute(db.text(
-                "UPDATE matches SET match_date = :dt WHERE home_team = :home AND away_team = :away"
+                "UPDATE matches SET match_date = :dt "
+                "WHERE home_team = :home AND away_team = :away AND stage = 'group'"
             ), {"dt": utc_str, "home": home, "away": away})
             db.session.commit()
         except Exception:
