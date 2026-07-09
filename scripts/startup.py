@@ -216,6 +216,14 @@ with app.app_context():
         db.session.rollback()
         print(f"seed_knockout_matches failed: {e}")
 
+    # ── Verify quarter-final fixtures (dedupes, fixes dates/teams/stadiums) ──────
+    try:
+        from scripts.update_qf_teams import update_qf
+        update_qf()
+    except Exception as e:
+        db.session.rollback()
+        print(f"update_qf failed: {e}")
+
     # ── Fix match group_name assignments (groups C/D, G/H, K/L were wrong) ──────
     group_fixes = {
         "C": ("Brazil", "Morocco", "Haiti", "Scotland"),
