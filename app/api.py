@@ -320,7 +320,7 @@ def matches():
     _edt = timedelta(hours=-4)
 
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32", "round_of_16"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16", "quarter_final"])
     ).order_by(Match.match_date).all()
 
     available_dates = sorted({(m.match_date + _edt).date() for m in all_matches if m.match_date})
@@ -415,7 +415,7 @@ def predict_match(match_id):
     except (KeyError, ValueError, TypeError):
         return jsonify({"error": "Invalid score values"}), 400
     qualifier_val = None
-    if match.stage in {"round_of_32", "round_of_16"}:
+    if match.stage in {"round_of_32", "round_of_16", "quarter_final"}:
         q = (data.get("predicted_qualifier") or "").strip()
         if home_score != away_score:
             qualifier_val = match.home_team if home_score > away_score else match.away_team
@@ -425,7 +425,7 @@ def predict_match(match_id):
     if prediction:
         prediction.predicted_home_score = home_score
         prediction.predicted_away_score = away_score
-        if match.stage in {"round_of_32", "round_of_16"}:
+        if match.stage in {"round_of_32", "round_of_16", "quarter_final"}:
             prediction.predicted_qualifier = qualifier_val
         msg = "Prediction updated!"
     else:
@@ -813,7 +813,7 @@ def predictions():
         tab = "classic"
     users = sorted([u for u in selected_comp.members if not u.is_admin], key=lambda u: u.username.lower())
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32", "round_of_16"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16", "quarter_final"])
     ).order_by(Match.match_date).all()
     result = {
         "selected_comp_id": selected_comp_id, "tab": tab,

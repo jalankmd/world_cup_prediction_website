@@ -167,11 +167,11 @@ knockout_matches = [
     {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-16 19:00", "stage": "round_of_16"},
     {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-17 19:00", "stage": "round_of_16"},
 
-    # Quarter-finals – July 17-19 2026 (4 matches)
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-18 19:00", "stage": "quarter_final"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-19 15:00", "stage": "quarter_final"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-19 19:00", "stage": "quarter_final"},
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-20 19:00", "stage": "quarter_final"},
+    # Quarter-finals – July 9-11 2026 (4 matches, times UTC)
+    {"home_team": "France",    "away_team": "Morocco",     "match_date": "2026-07-09 20:00", "stage": "quarter_final"},  # 4pm ET Jul 9, Boston
+    {"home_team": "Spain",     "away_team": "Belgium",     "match_date": "2026-07-10 19:00", "stage": "quarter_final"},  # 3pm ET Jul 10, Los Angeles
+    {"home_team": "Norway",    "away_team": "England",     "match_date": "2026-07-11 21:00", "stage": "quarter_final"},  # 5pm ET Jul 11, Miami
+    {"home_team": "Argentina", "away_team": "Switzerland", "match_date": "2026-07-12 01:00", "stage": "quarter_final"},  # 9pm ET Jul 11, Kansas City
 
     # Semi-finals – July 22-23 2026 (2 matches)
     {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-22 19:00", "stage": "semi-final"},
