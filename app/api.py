@@ -243,6 +243,33 @@ def join_group():
     return jsonify({"message": f"Joined '{group.name}'!"})
 
 
+@api_bp.route("/settings/delete_account", methods=["POST"])
+@jwt_required()
+def delete_account():
+    user = _get_current_user()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    if user.is_admin:
+        return jsonify({"error": "Admin accounts cannot be deleted from the app"}), 403
+    data = request.get_json() or {}
+    password = data.get("password") or ""
+    if not user.check_password(password):
+        return jsonify({"error": "Incorrect password"}), 400
+    try:
+        Prediction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        OddsPrediction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        GroupQualifierPrediction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        PodiumPrediction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        RankSnapshot.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        user.competitions = []
+        db.session.delete(user)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "Database error"}), 500
+    return jsonify({"message": "Your account and all associated data have been deleted."})
+
+
 # ── Home ───────────────────────────────────────────────────────────────────────
 
 @api_bp.route("/home", methods=["GET"])
