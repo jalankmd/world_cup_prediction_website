@@ -269,6 +269,14 @@ with app.app_context():
     from scripts.create_admin_account import create_admin
     create_admin()
 
+    # ── Apple App Review demo account (registration is closed) ─────────────────
+    try:
+        from scripts.create_review_account import create_review_account
+        create_review_account()
+    except Exception as e:
+        db.session.rollback()
+        print(f"create_review_account failed: {e}")
+
     # ── Fix all group-stage kickoff times (UTC) ────────────────────────────────
     # All times converted from official ET schedule (EDT = UTC-4).
     # Idempotent: safe to run on every deploy.
