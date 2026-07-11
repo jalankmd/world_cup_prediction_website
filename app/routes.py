@@ -1232,6 +1232,12 @@ def rules():
     return render_template("rules.html", competitions_prize_info=competitions_prize_info)
 
 
+@bp.route("/privacy")
+def privacy():
+    # Public — linked from the App Store listing, so no login required.
+    return render_template("privacy.html")
+
+
 # ---------------------------
 # Leaderboard
 # ---------------------------
