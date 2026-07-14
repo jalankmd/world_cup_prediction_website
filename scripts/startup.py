@@ -194,7 +194,7 @@ with app.app_context():
     try:
         from app.models import Prediction, OddsPrediction
         tbd_knockouts = Match.query.filter(
-            Match.stage.in_(["round_of_32", "round_of_16", "quarter_final"]),
+            Match.stage.in_(["round_of_32", "round_of_16", "quarter_final", "semi-final"]),
             Match.home_team == "TBD",
         ).all()
         if tbd_knockouts:
@@ -224,6 +224,14 @@ with app.app_context():
         db.session.rollback()
         print(f"update_qf failed: {e}")
 
+    # ── Verify semi-final fixtures (dedupes, fixes dates/teams/stadiums) ─────────
+    try:
+        from scripts.update_sf_teams import update_sf
+        update_sf()
+    except Exception as e:
+        db.session.rollback()
+        print(f"update_sf failed: {e}")
+
     # ── Fix match group_name assignments (groups C/D, G/H, K/L were wrong) ──────
     group_fixes = {
         "C": ("Brazil", "Morocco", "Haiti", "Scotland"),
@@ -237,7 +245,7 @@ with app.app_context():
         placeholders = ", ".join(f"'{t}'" for t in teams)
         try:
             db.session.execute(db.text(
-                f"UPDATE matches SET group_name = '{grp}' WHERE home_team IN ({placeholders})"
+                f"UPDATE matches SET group_name = '{grp}' WHERE home_team IN ({placeholders}) AND stage = 'group'"
             ))
             db.session.commit()
         except Exception:

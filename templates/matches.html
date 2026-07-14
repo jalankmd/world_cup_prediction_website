@@ -181,7 +181,7 @@ setInterval(updateChecklistCountdowns, 1000);
         <div class="save-all-bar">
             <button type="submit" class="save-all-btn">Save All Predictions</button>
         </div>
-        {% set has_r32 = matches | selectattr('stage', 'in', ['round_of_32', 'round_of_16', 'quarter_final']) | list | length > 0 %}
+        {% set has_r32 = matches | selectattr('stage', 'in', ['round_of_32', 'round_of_16', 'quarter_final', 'semi-final']) | list | length > 0 %}
         <div class="matches-table-wrap">
             <table class="matches-table">
                 <thead>
@@ -260,7 +260,7 @@ setInterval(updateChecklistCountdowns, 1000);
                             </td>
                             {% if has_r32 %}
                             <td class="col-qualifier">
-                                {% if match.stage in ['round_of_32', 'round_of_16', 'quarter_final'] %}
+                                {% if match.stage in ['round_of_32', 'round_of_16', 'quarter_final', 'semi-final'] %}
                                     {% if status == "open" %}
                                         <select name="qualifier_{{ match.id }}"
                                                 class="qualifier-select"
@@ -291,7 +291,7 @@ setInterval(updateChecklistCountdowns, 1000);
                             <td>
                                 {% if match.is_finished() %}
                                     {{ match.home_score }} - {{ match.away_score }}
-                                    {% if match.stage in ['round_of_32', 'round_of_16', 'quarter_final'] and match.advancing_team %}
+                                    {% if match.stage in ['round_of_32', 'round_of_16', 'quarter_final', 'semi-final'] and match.advancing_team %}
                                         <br><small class="advancing-label">↑ {{ match.advancing_team }}</small>
                                     {% endif %}
                                 {% else %}

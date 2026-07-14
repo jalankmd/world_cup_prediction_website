@@ -26,14 +26,14 @@ QF_MATCHES = [
 ]
 
 
-def _delete_matches(matches, reason):
+def _delete_matches(matches, reason, stage):
     if not matches:
         return
     ids = [m.id for m in matches]
     Prediction.query.filter(Prediction.match_id.in_(ids)).delete(synchronize_session=False)
     OddsPrediction.query.filter(OddsPrediction.match_id.in_(ids)).delete(synchronize_session=False)
     Match.query.filter(Match.id.in_(ids)).delete(synchronize_session=False)
-    print(f"Removed {len(ids)} {reason} quarter_final rows.")
+    print(f"Removed {len(ids)} {reason} {stage} rows.")
 
 
 def _merge_into(kept, extra):
@@ -57,9 +57,10 @@ def _merge_into(kept, extra):
     db.session.flush()
 
 
-def update_qf():
-    real = {frozenset((m["home_team"], m["away_team"])): m for m in QF_MATCHES}
-    rows = Match.query.filter_by(stage="quarter_final").all()
+def ensure_stage_fixtures(stage, fixtures):
+    """Self-heal one knockout stage so it holds exactly the given fixtures."""
+    real = {frozenset((m["home_team"], m["away_team"])): m for m in fixtures}
+    rows = Match.query.filter_by(stage=stage).all()
 
     by_pair = {}
     stray = []
@@ -70,7 +71,7 @@ def update_qf():
         else:
             stray.append(row)
 
-    _delete_matches(stray, "stray/placeholder")
+    _delete_matches(stray, "stray/placeholder", stage)
 
     for key, new in real.items():
         match_date = datetime.strptime(new["match_date"], "%Y-%m-%d %H:%M")
@@ -82,7 +83,7 @@ def update_qf():
             kept = group[0]
             for extra in group[1:]:
                 _merge_into(kept, extra)
-            _delete_matches(group[1:], "duplicate")
+            _delete_matches(group[1:], "duplicate", stage)
 
             if kept.home_team != new["home_team"]:
                 # Reversed home/away: flip the row and every prediction on it
@@ -109,13 +110,17 @@ def update_qf():
                 away_team=new["away_team"],
                 stadium=new["stadium"],
                 group_name=None,
-                stage="quarter_final",
+                stage=stage,
                 match_date=match_date,
             ))
             print(f"  added: {new['home_team']} vs {new['away_team']} @ {match_date}")
 
     db.session.commit()
-    print("\nDone. Quarter-final fixtures verified.")
+    print(f"\nDone. {stage} fixtures verified.")
+
+
+def update_qf():
+    ensure_stage_fixtures("quarter_final", QF_MATCHES)
 
 
 if __name__ == "__main__":
