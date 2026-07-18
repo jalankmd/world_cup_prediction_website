@@ -98,7 +98,7 @@
                                    placeholder="–">
                         </td>
                         <td>
-                            {% if match.stage in ['round_of_32', 'round_of_16', 'quarter_final', 'semi-final'] %}
+                            {% if match.stage in ['round_of_32', 'round_of_16', 'quarter_final', 'semi-final', 'third-place', 'final'] %}
                                 <select name="advancing_team-{{ match.id }}">
                                     <option value="">— not set —</option>
                                     <option value="{{ match.home_team }}" {% if match.advancing_team == match.home_team %}selected{% endif %}>{{ match.home_team }}</option>

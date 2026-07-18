@@ -177,11 +177,11 @@ knockout_matches = [
     {"home_team": "France",  "away_team": "Spain",     "match_date": "2026-07-14 19:00", "stage": "semi-final"},  # 3pm ET Jul 14, Dallas
     {"home_team": "England", "away_team": "Argentina", "match_date": "2026-07-15 19:00", "stage": "semi-final"},  # 3pm ET Jul 15, Atlanta
 
-    # Third-place play-off – July 25 2026
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-25 19:00", "stage": "third-place"},
+    # Third-place play-off – July 18 2026
+    {"home_team": "France", "away_team": "England", "match_date": "2026-07-18 21:00", "stage": "third-place"},  # 5pm ET Jul 18, Miami
 
-    # Final – July 26 2026
-    {"home_team": "TBD", "away_team": "TBD", "match_date": "2026-07-26 20:00", "stage": "final"},
+    # Final – July 19 2026
+    {"home_team": "Spain", "away_team": "Argentina", "match_date": "2026-07-19 19:00", "stage": "final"},  # 3pm ET Jul 19, New York New Jersey
 ]
 
 

@@ -188,13 +188,13 @@ with app.app_context():
         db.session.rollback()
 
     # ── Replace TBD knockout matches with actual fixtures ────────────────────────
-    # Only for stages whose real fixtures are now in seed_matches.py (R32/R16/QF).
+    # Only for stages whose real fixtures are now in seed_matches.py (all knockout stages).
     # Leftover TBD placeholders (and any predictions on them) are removed so the
     # date-based idempotency check in seed_knockout_matches can't collide with them.
     try:
         from app.models import Prediction, OddsPrediction
         tbd_knockouts = Match.query.filter(
-            Match.stage.in_(["round_of_32", "round_of_16", "quarter_final", "semi-final"]),
+            Match.stage.in_(["round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"]),
             Match.home_team == "TBD",
         ).all()
         if tbd_knockouts:
@@ -203,7 +203,7 @@ with app.app_context():
             OddsPrediction.query.filter(OddsPrediction.match_id.in_(tbd_ids)).delete(synchronize_session=False)
             Match.query.filter(Match.id.in_(tbd_ids)).delete(synchronize_session=False)
             db.session.commit()
-            print(f"Cleared {len(tbd_ids)} TBD knockout matches (R32/R16/QF).")
+            print(f"Cleared {len(tbd_ids)} TBD knockout matches.")
     except Exception as e:
         db.session.rollback()
         print(f"Failed to clear TBD knockout matches: {e}")
@@ -231,6 +231,14 @@ with app.app_context():
     except Exception as e:
         db.session.rollback()
         print(f"update_sf failed: {e}")
+
+    # ── Verify third-place and final fixtures (dedupes, fixes dates/teams/stadiums)
+    try:
+        from scripts.update_final_teams import update_final
+        update_final()
+    except Exception as e:
+        db.session.rollback()
+        print(f"update_final failed: {e}")
 
     # ── Fix match group_name assignments (groups C/D, G/H, K/L were wrong) ──────
     group_fixes = {

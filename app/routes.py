@@ -402,7 +402,7 @@ def matches():
         return redirect(url_for("main.admin_results", admin_tab="classic"))
 
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32", "round_of_16", "quarter_final", "semi-final"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"])
     ).order_by(Match.match_date).all()
 
     # Determine the active competition context
@@ -590,7 +590,7 @@ def predict_inline(match_id):
         return redirect(url_for("main.matches", date=selected_date, competition=selected_competition, group_id=group_id))
 
     qualifier_val = None
-    if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final"}:
+    if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"}:
         q = (request.form.get("predicted_qualifier") or "").strip()
         if home_score != away_score:
             qualifier_val = match.home_team if home_score > away_score else match.away_team
@@ -600,7 +600,7 @@ def predict_inline(match_id):
     if prediction:
         prediction.predicted_home_score = home_score
         prediction.predicted_away_score = away_score
-        if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final"}:
+        if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"}:
             prediction.predicted_qualifier = qualifier_val
         flash("Prediction updated!", "success")
     else:
@@ -703,7 +703,7 @@ def predict_batch():
                 continue
 
             qualifier_val = None
-            if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final"}:
+            if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"}:
                 q = (request.form.get(f"qualifier_{match_id}") or "").strip()
                 if home_score != away_score:
                     qualifier_val = match.home_team if home_score > away_score else match.away_team
@@ -716,7 +716,7 @@ def predict_batch():
             if prediction:
                 prediction.predicted_home_score = home_score
                 prediction.predicted_away_score = away_score
-                if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final"}:
+                if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"}:
                     prediction.predicted_qualifier = qualifier_val
             else:
                 db.session.add(Prediction(
@@ -997,7 +997,7 @@ def user_predictions():
         pred_map = {p.user_id: p for p in preds}
 
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32", "round_of_16", "quarter_final", "semi-final"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"])
     ).order_by(Match.match_date).all()
 
     group_tabs = [{"value": str(c.id), "label": c.name} for c in user_comps] if len(user_comps) > 1 else []
@@ -1402,7 +1402,7 @@ def admin_predictions():
             pred_map = {p.user_id: p for p in preds}
 
     all_matches = Match.query.filter(
-        Match.stage.in_(["group", "round_of_32", "round_of_16", "quarter_final", "semi-final"])
+        Match.stage.in_(["group", "round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"])
     ).order_by(Match.match_date).all()
     group_tabs = [{"value": str(g.id), "label": g.name} for g in groups]
     all_teams = sorted({m.home_team for m in all_matches}.union({m.away_team for m in all_matches}))
@@ -1465,12 +1465,12 @@ def admin_edit_user_prediction():
                 home_score = int(request.form["home_score"])
                 away_score = int(request.form["away_score"])
                 qualifier = None
-                if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final"}:
+                if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"}:
                     qualifier = (request.form.get("predicted_qualifier") or "").strip() or None
                 if pred:
                     pred.predicted_home_score = home_score
                     pred.predicted_away_score = away_score
-                    if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final"}:
+                    if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"}:
                         pred.predicted_qualifier = qualifier
                     flash(f"Score prediction updated for {target_user.username}.", "success")
                 else:

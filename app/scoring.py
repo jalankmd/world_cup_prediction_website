@@ -61,7 +61,7 @@ def calculate_points(prediction):
     bonus = _stage_bonus(match.stage)
 
     qualifier_bonus = 0
-    if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final"} and match.advancing_team and prediction.predicted_qualifier:
+    if match.stage in {"round_of_32", "round_of_16", "quarter_final", "semi-final", "third-place", "final"} and match.advancing_team and prediction.predicted_qualifier:
         if prediction.predicted_qualifier == match.advancing_team:
             qualifier_bonus = 1
 
